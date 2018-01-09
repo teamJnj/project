@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="boardMapper">
+
+	<!-- 수안============== -->
+	<!-- QNA 갯수 전체 가져오기 -->
+	<select id="qnaCount">
+		<![CDATA[
+			select count(*) from qna
+		]]>
+	</select>
+	
+	
+	<!-- QNA 리스트 가져오기 -->
+	<select id="qnaCount0">
+		<![CDATA[
+			select * from 
+			    (select rownum rnum ,qa.* from
+			        (select qna_no qnaNo, qna_sort qnaSort, write_id writeId, qna_title qnaTitle,
+			        to_char(write_date, 'yyyy-MM-dd') writeDate, answer_content answerContent from qna order by qnaNo desc) qa 
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum} 
+		]]>
+	</select>
+	
+	
+	<!-- QNA 뷰화면 -->
+	<select id="qnaCount1">
+		<![CDATA[
+			select qna_sort qnaSort, qna_title qnaTitle, write_date writeDate, write_id writeId, answer_content answerContent,
+			qna_content qnaContent, answer_date answerDate, qna_img qnaImg from qna where qna_no=#{qnaNo} and write_id=#{writeId}
+		]]>
+	</select>
+	
+	
+	<!-- QNA 글쓰기 -->
+	<insert id="qnaCount2">
+		<selectKey keyProperty="qnaNo" resultType="int" order="BEFORE">
+			<![CDATA[
+				select qna_no.nextval from dual
+			]]>
+		</selectKey>
+		
+		<![CDATA[
+		insert into qna values(#{qnaNo},#{qnaDivision},#{qnaSort},#{writeId},#{qnaTitle},#{qnaContent},#{qnaImg},sysdate)
+		]]>
+	</insert>
+	
+	
+	<!-- QNA 글수정 -->
+	<update id="qnaCount3">
+		<![CDATA[
+			
+		]]>
+	</update>
+	
+	
+	<!-- QNA 글삭제 -->
+	<delete id="qnaCount4">
+		<![CDATA[
+		]]>
+	</delete>
+	
+	
+	
+	
+	<!-- QNA 답변 쓰기 -->
+	<insert id="qnaCount5">
+		<selectKey keyProperty="qnaNo" resultType="int" order="BEFORE">
+			<![CDATA[
+				select qna_no.nextval from dual
+			]]>
+		</selectKey>
+		
+		<![CDATA[
+		insert into qna values(#{qnaNo},#{qnaDivision},#{qnaSort},#{writeId},#{qnaTitle},#{qnaContent},#{qnaImg},sysdate)
+		]]>
+	</insert>
+	
+	
+	<!-- QNA 답변 수정 -->
+	<update id="qnaCount6">
+		<![CDATA[
+			
+		]]>
+	</update>
+	
+	
+	<!-- QNA 답변 삭제 -->
+	<delete id="qnaCount7">
+		<![CDATA[
+		]]>
+	</delete>
+	
+</mapper>
+

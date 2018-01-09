@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="findMapper">
+
+	<!-- 또히 -->
+	<!-- 찾아요, 찾았어요 findDivision and findNo로 상세정보 긁어오기 -->
+	<select id="getBoardFindViewPage" parameterType="hashmap" resultType="find">
+		<![CDATA[
+			select find_Division findDivision, find_No findNo, find_Title findTitle, 
+			find_Content findContent, to_char(find_Date,'yyyy-MM-dd') findDate, mapX, mapY, 
+			center_Addr centerAddr, pet_Img petImg, pet_Name petName, pet_Sort petSort, 
+			pet_Kind petKind, pet_Gender petGender, pet_Age petAge, pet_Feature petFeature, 
+			write_Id writeId, write_Tel writeTel, find_Addr findAddr,
+			substr(find_addr,2,(instr(find_addr,')')-2)) addr1,
+			substr(find_addr, instr(find_addr,')')+1, (instr(find_addr,'　')-instr(find_addr,')'))-1 ) addr2,
+			substr(find_addr, (instr(find_addr,'　')+1) ) addr3,
+			to_char(write_Date ,'yyyy-MM-dd') writeDate, hits, 
+			comment_Num commentNum, report_Cnt reportCnt, find_State findState 
+			from find
+			where find_Division=#{findDivision} and find_No=#{findNo}
+		]]>
+	</select>
+	
+
+	
+	
+	<!-- 찾아요, 찾았어요 findDivision and findNo로 글쓰기 -->
+	<insert id="boardFindWrite" parameterType="hashmap">
+		<![CDATA[
+			insert into find values(#{findDivision},find_no_seq.nextval,#{findTitle},#{findContent},
+			#{findDate},#{findAddr},#{mapX},#{mapY},#{centerAddr, jdbcType=VARCHAR},#{petImg},#{petName},
+			#{petSort},#{petKind},#{petGender},#{petAge},#{petFeature},#{writeId},#{writeTel},
+			sysdate ,#{hits},#{commentNum},#{reportCnt},#{findState})
+		]]>
+	</insert>
+	<!-- 글 수정 -->
+	<update id="boardFindUpdate" parameterType="find">
+		update find set find_Title=#{findTitle}, find_Content=#{findContent}, find_Date=#{findDate},
+		find_Addr=#{findAddr}, center_Addr=#{centerAddr}, pet_Img=#{petImg, jdbcType=VARCHAR},
+		pet_Name=#{petName}, pet_Sort=#{petSort}, pet_Kind=#{petKind}, pet_Gender=#{petGender},
+		pet_Age=#{petAge}, pet_Feature=#{petFeature}
+		where find_No=#{findNo}
+	</update>
+
+	<!-- 글삭제 -->
+	<delete id="boardFindDelete">
+		delete from find where find_No=#{findNo}
+	</delete>
+	
+	
+	<select id="getFind" resultType="find">
+		select find_Division findDivision, find_No findNo, find_Title findTitle, 
+			find_Content findContent, to_char(find_Date,'yyyy-MM-dd') findDate,
+			substr(find_addr,2,(instr(find_addr,')')-2)) addr1,
+			substr(find_addr, instr(find_addr,')')+1, (instr(find_addr,'　')-instr(find_addr,')'))-1 ) addr2,
+			substr(find_addr, (instr(find_addr,'　')+1) ) addr3,
+			mapX, mapY, 
+			center_Addr centerAddr, pet_Img petImg, pet_Name petName, pet_Sort petSort, 
+			pet_Kind petKind, pet_Gender petGender, pet_Age petAge, pet_Feature petFeature, 
+			write_Id writeId, write_Tel writeTel, 
+			to_char(write_Date ,'yyyy-MM-dd') writeDate, hits, 
+			comment_Num commentNum, report_Cnt reportCnt, find_State findState 
+			 from find where find_No=#{findNo} and find_division=1
+	</select>
+	
+	
+	<!-- 페이지 -->
+	<select id="getBoardCnt" resultType="int">
+		select count(*) from find where find_division=1
+	</select>
+	
+		
+	<select id="listBoard" parameterType="hashmap" resultType="find">
+		<![CDATA[
+			select * from 
+				(select rownum rnum ,b.* from (select FIND_DIVISION FINDDIVISION, FIND_NO FINDNO,
+				FIND_TITLE FINDTITLE, FIND_CONTENT FINDCONTENT,
+				to_char(FIND_DATE, 'yyyy-MM-dd') FINDDATE, 
+				substr(find_Addr, instr(find_Addr,')')+1, 2) findAddr,
+				MAPX, MAPY, 
+				CENTER_ADDR CENTERADDR, PET_IMG PETIMG, PET_NAME PETNAME, PET_SORT PETSORT, 
+				PET_KIND PETKIND, PET_GENDER PETGENDER, PET_AGE PETAGE, PET_FEATURE PETFEATURE, 
+				WRITE_ID WRITEID, WRITE_TEL WRITETEL,  to_char(WRITE_DATE, 'yyyy-MM-dd') WRITEDATE, HITS, 
+				COMMENT_NUM COMMENTNUM, REPORT_CNT REPORTCNT, FIND_STATE FINDSTATE
+				from find where find_division=1 order by FIND_NO desc) b 
+			where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+		
+	<!-- 리플 리스트 읽기-->
+	<select id="listFindComment" parameterType="int" resultType="findComment">
+		select find_Comment_No findCommentNo, find_Division findDivision, find_No findNo, 
+		write_Id writeId, comment_Content commentContent, to_char(WRITE_DATE, 'yyyy-MM-dd') writeDate, report_Cnt reportCnt 
+		from Find_Comment where find_No=#{findNo} order by find_Comment_No desc
+	</select>
+	
+	<!-- 리플작성 -->
+	<insert id="insertReply" parameterType="findComment">
+		insert into find_comment 
+		values( find_comment_no_seq.nextval, #{findDivision}, #{findNo}, #{writeId}, #{commentContent},
+		sysdate,0)
+	</insert>
+	
+	<select id="countReply"  parameterType="findComment" resultType="int">
+		select count(*) from find_comment where find_no=#{findNo}
+	</select>
+	
+	<!-- 리플수정 -->
+	<update id="updateFindComment" parameterType="findComment">
+		update find_comment set
+		comment_content = #{commentContent},
+		write_date = sysdate
+		where find_comment_no = #{findCommentNo} 
+	</update>
+
+
+	<!-- 리플삭제 -->
+	<delete id="deleteFindComment" parameterType="hashmap">
+		delete from find_comment where find_no=#{findNo} and
+		find_comment_no=#{findCommentNo}
+	</delete>
+	
+	
+	
+	<!-- Find 글갯수 다 가져오기=펫마리수 -->
+	<select id="getFindCount" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select count(*) from 
+				(select find_Division findDivision, find_No findNo, find_Title findTitle, 
+				find_Content findContent, to_char(find_Date,'yyyy-MM-dd') findDate, 
+				find_Addr findAddr, mapX, mapY, 
+				center_Addr centerAddr, pet_Img petImg, pet_Name petName, pet_Sort petSort, 
+				pet_Kind petKind, pet_Gender petGender, pet_Age petAge, pet_Feature petFeature, 
+				write_Id writeId, write_Tel writeTel, 
+				to_char(write_Date ,'yyyy-MM-dd') writeDate, hits, 
+				comment_Num commentNum, report_Cnt reportCnt, find_State findState 
+
+		        from find
+		        
+		        where pet_sort like ${petSort} and RTRIM(substr(find_addr, 0,(instr(find_addr,' ')))) like ${firstAddr})
+				
+				
+		]]>
+	</select>
+	
+	<!-- Find 리스트 -->
+	<select id="getFindList" resultType="findDomain" parameterType="hashmap">
+		<![CDATA[
+		 select * from 
+    		(select rownum rnum, list.* from( 
+        		select find_Division findDivision, find_No findNo, find_Title findTitle, 
+				find_Content findContent, to_char(find_Date,'yyyy-MM-dd') findDate, 
+				substr(find_Addr, instr(find_Addr,')')+1, 2) findAddr, mapX, mapY, 
+				center_Addr centerAddr, pet_Img petImg, pet_Name petName, pet_Sort petSort, 
+				pet_Kind petKind, pet_Gender petGender, pet_Age petAge, pet_Feature petFeature, 
+				write_Id writeId, write_Tel writeTel, 
+				to_char(write_Date ,'yyyy-MM-dd') writeDate, hits, 
+				comment_Num commentNum, report_Cnt reportCnt, find_State findState 
+			        
+		        from find
+		        
+		        where find_division=1 and pet_sort like ${petSort} and RTRIM(substr(find_addr, 0,(instr(find_addr,' ')))) like ${firstAddr} order by find_No desc)list 
+			where rownum<=#{endArticleNum}) 
+		where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- 조회수 올리기 -->
+	<select id="getFindHit" parameterType="int">
+		update find set hits = hits+1 where find_no = #{findNo}
+	</select>
+	
+	<!-- 신고수 조회 -->
+	<select id="getReportCnt" parameterType="int" resultType="int">
+		select report_cnt from find where find_No=#{findNo}
+	</select>
+	<!-- 6.글의 신고수 증가 -->
+	<select id="increaseReportCnt" parameterType="int">
+		update find set report_cnt = report_cnt+1 where find_no = #{findno}
+	</select>
+	
+	
+	
+	
+	<!-- 주리 -->
+	<select id="getCountMemberFindList" parameterType="adMFindInfo" resultType="int">
+		<![CDATA[
+			select count(*) from
+				(select FIND_DIVISION FINDDIVISION, FIND_NO FINDNO,
+			            FIND_TITLE FINDTITLE, FIND_CONTENT FINDCONTENT,
+			            to_char(FIND_DATE, 'yyyyMMdd') FINDDATE, FIND_ADDR FINDADDR, MAPX, MAPY, 
+			            CENTER_ADDR CENTERADDR, PET_IMG PETIMG, PET_NAME PETNAME, PET_SORT PETSORT, 
+			            PET_KIND PETKIND, PET_GENDER PETGENDER, PET_AGE PETAGE, PET_FEATURE PETFEATURE, 
+			            WRITE_ID WRITEID, WRITE_TEL WRITETEL,  to_char(WRITE_DATE, 'yyyyMMdd') WRITEDATE, HITS, 
+			            COMMENT_NUM COMMENTNUM, REPORT_CNT REPORTCNT, FIND_STATE FINDSTATE
+			    from find 
+			    where write_id=#{writeId})
+			${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getMemberFindList" parameterType="adMFindInfo" resultType="find">
+		<![CDATA[
+			select * from 
+			    (select rownum rnum ,b.* 
+			    from 
+			        (select * from
+			            (select FIND_DIVISION FINDDIVISION, FIND_NO FINDNO,
+			                        FIND_TITLE FINDTITLE, FIND_CONTENT FINDCONTENT,
+			                        to_char(FIND_DATE, 'yyyyMMdd') FINDDATE, FIND_ADDR FINDADDR, MAPX, MAPY, 
+			                        CENTER_ADDR CENTERADDR, PET_IMG PETIMG, PET_NAME PETNAME, PET_SORT PETSORT, 
+			                        PET_KIND PETKIND, PET_GENDER PETGENDER, PET_AGE PETAGE, PET_FEATURE PETFEATURE, 
+			                        WRITE_ID WRITEID, WRITE_TEL WRITETEL,  to_char(WRITE_DATE, 'yyyyMMdd') WRITEDATE, HITS, 
+			                        COMMENT_NUM COMMENTNUM, REPORT_CNT REPORTCNT, FIND_STATE FINDSTATE
+			            from find 
+			            where write_id=#{writeId})
+			        ${sqlText} order by ${colName} ${sortType}) b 	
+			    where rownum<=#{endArticleNum}) 
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<update id="updateFindState" parameterType="hashmap" >
+		update find set find_state=#{finsState} where find_division=#{findDivision} and find_no=#{findNo}
+	</update>
+	
+	<update id="updateFindCommentNum" parameterType="hashmap" >
+		update find set comment_num= comment_num${commentNum} where find_division=#{findDivision} and find_no=#{findNo}
+	</update>
+	
+	<delete id="deleteFind" parameterType="hashmap" >
+		delete from find where find_division=#{findDivision} and find_no=#{findNo}
+	</delete>
+	
+	
+	<select id="getCountMemberFindCommentList" parameterType="adMFindCommentInfo" resultType="int" >
+		<![CDATA[
+					select count(*) from
+			            (select f.FIND_DIVISION FINDDIVISION, f.FIND_NO FINDNO,
+			                        f.FIND_TITLE FINDTITLE, c.find_comment_no findCommentNo, 
+                                    c.write_id writeId, c.comment_content commentContent,
+                                    to_char(c.write_date,'yyyyMMdd') writeDate, c.report_cnt reportCnt
+			            from find f, find_comment c 
+			            where f.find_no=c.find_no and f.find_division=c.find_division and c.write_id=#{writeId})
+			        ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getMemberFindCommentList" parameterType="adMFindCommentInfo" resultType="findComment" >
+		<![CDATA[
+			select * from 
+			    (select rownum rnum ,b.* 
+			    from 
+			        (select * from
+			            (select f.FIND_DIVISION FINDDIVISION, f.FIND_NO FINDNO,
+			                        f.FIND_TITLE FINDTITLE, c.find_comment_no findCommentNo, 
+                                    c.write_id writeId, c.comment_content commentContent,
+                                    to_char(c.write_date,'yyyyMMdd') writeDate, c.report_cnt reportCnt
+			            from find f, find_comment c 
+			            where f.find_no=c.find_no and f.find_division=c.find_division and c.write_id=#{writeId})
+			        ${sqlText} order by ${colName} ${sortType}) b 	
+			    where rownum<=#{endArticleNum}) 
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<delete id="deleteFindOneComment" parameterType="hashmap" >
+		delete from find_comment where find_division=#{findDivision} and find_no=#{findNo} and find_comment_no=#{findCommentNo} and write_id=#{writeId}
+	</delete>
+	
+	<delete id="deleteAllFindComment" parameterType="hashmap" >
+		delete from find_comment where find_division=#{findDivision} and find_no=#{findNo}
+	</delete>
+	
+	<select id="getMemberTotalFindState" parameterType="hashmap" resultType="hashmap">
+		select find_state findState, count(*) count from find where write_id=#{writeId} and FIND_DIVISION=#{findDivision} group by find_state
+	</select>
+	
+	<select id="getDivisionByFindNo" parameterType="int" resultType="int">
+		select find_division from find where find_no=#{findNo}
+	</select>
+	
+				
+</mapper>
+

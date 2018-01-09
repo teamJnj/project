@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="centerMapper">
+	
+	<select id="getAllCenter" resultType="center">
+		<![CDATA[
+			select center_id centerId, password, center_name centerName, 
+				center_addr centerAddr, center_tel centerTel, email, homepage, 
+				licensee, license_no licenseNo, license_img licenseImg, 
+				sponsor_account_no sponsorAccountNo, sponsor_account_bank sponsorAccountBank, 
+				sponsor_account_holder sponsorAccountHolder, 
+				sponsor_account_img sponsorAccountImg, center_state centerState
+			from center
+		]]>
+	</select>
+	
+	<select id="getAllPageCenter" resultType="center">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select center_id centerId, password, center_name centerName, 
+		                center_addr centerAddr, center_tel centerTel, email, homepage, 
+		                licensee, license_no licenseNo, license_img licenseImg, 
+		                sponsor_account_no sponsorAccountNo, sponsor_account_bank sponsorAccountBank, 
+		                sponsor_account_holder sponsorAccountHolder, 
+		                sponsor_account_img sponsorAccountImg, center_state centerState
+            		from center) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getCenter" resultType="center">
+		<![CDATA[
+			select center_id centerId, password, center_name centerName, 
+				center_addr centerAddr, center_tel centerTel, email, homepage, 
+				licensee, license_no licenseNo, license_img licenseImg, 
+				sponsor_account_no sponsorAccountNo, sponsor_account_bank sponsorAccountBank, 
+				sponsor_account_holder sponsorAccountHolder, 
+				sponsor_account_img sponsorAccountImg, center_state centerState
+			from center where center_id=#{centerId}
+		]]>
+	</select>
+	
+	
+	<select id="getCenterId" parameterType="hashmap" resultType="string">
+		<![CDATA[
+			select center_ID from center where licensee=#{licensee} and EMAIL=#{email}
+		]]>
+	</select>
+	
+	<select id="checkCenterIdAndEmail" parameterType="hashmap" resultType="int">
+		<![CDATA[
+			select count(*) from center where center_id=#{centerId} and EMAIL=#{email}
+		]]>
+	</select>
+	
+	<select id="checkExistCenterId" parameterType="string" resultType="int" >
+		<![CDATA[
+			select count(*) from center where center_ID=#{centerId}
+		]]>
+	</select>
+	
+	<select id="checkExistCenterEmail" parameterType="string" resultType="int" >
+		<![CDATA[
+			select count(*) from center where email=#{email}
+		]]>
+	</select>
+	
+	<insert id="insertCenter" parameterType="center">		
+		<![CDATA[
+			insert into center values( #{centerId}, #{password}, #{centerName}, 
+				#{centerAddr}, #{centerTel}, #{email}, 
+				#{homepage}, #{licensee}, #{licenseNo}, 
+				#{licenseImg}, #{sponsorAccountNo}, #{sponsorAccountBank}, 
+				#{sponsorAccountHolder}, #{sponsorAccountImg}, #{centerState})
+		]]>
+	</insert>
+	
+	<insert id="insertCenterImg"  parameterType ="CenterImg" >
+		<selectKey keyProperty="centerImgNo" resultType="int" order="BEFORE">
+			select nvl(max(center_img_no),0)+1 from center_img where center_id = #{centerId}
+		</selectKey>
+			insert into center_img values ( #{centerId}, #{centerImgNo}, #{img} )
+	</insert>
+	
+	<insert id="insertAuthority" parameterType="hashmap">
+		insert into authorities values (#{id}, #{authority})
+	</insert>
+	
+	<update id="updateCenter" parameterType="hashmap">
+		<![CDATA[
+			update center set password=#{password} where center_id=#{centerId}
+		]]>
+	</update>
+	
+	<!-- 센터정보수정 -->
+	<update id="updateCenterInfo" parameterType="center">
+		<![CDATA[
+			update center set center_name=#{centerName}, center_tel=#{centerTel}, 
+			center_addr=#{centerAddr}, homepage=#{homepage}, licensee=#{licensee} where center_id=#{centerId}
+		]]>
+	</update>
+	
+	<delete id="deleteCenter" parameterType="string">
+		<![CDATA[
+			delete from center where center_id=#{centerId}
+		]]>
+	</delete>
+	
+	<select id="getPassword" parameterType="string" resultType="string">
+		<![CDATA[
+			select password from center where center_id=#{centerId}
+		]]>
+	</select>
+	
+	<!-- 센터 상태 변경 -->
+	<update id="updateCenterState" parameterType="hashmap">
+		<![CDATA[
+			update center set center_state=#{centerState} where center_id=#{centerId}
+		]]>
+	</update>
+	
+	<!-- 주리 -->
+	<select id="getCountCenter" resultType="int">
+		select count(*) from center
+	</select>
+	
+	<!-- <select id="getAllPageCenter" parameterType="hashmap" resultType="center">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select center_id centerId, password, center_name centerName, 
+		                center_addr centerAddr, center_tel centerTel, email, homepage, 
+		                licensee, license_no licenseNo, license_img licenseImg, 
+		                sponsor_account_no sponsorAccountNo, sponsor_account_bank sponsorAccountBank, 
+		                sponsor_account_holder sponsorAccountHolder, 
+		                sponsor_account_img sponsorAccountImg, center_state centerState
+		            from center) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select> -->
+	
+	<select id="getSearchCountCenter" parameterType="hashmap" resultType="int">
+		select count(*) from center where ${colName} like ${find}
+	</select>
+	
+	<select id="getSearchAllPageCenter" parameterType="hashmap" resultType="center">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select center_id centerId, password, center_name centerName, 
+		                center_addr centerAddr, center_tel centerTel, email, homepage, 
+		                licensee, license_no licenseNo, license_img licenseImg, 
+		                sponsor_account_no sponsorAccountNo, sponsor_account_bank sponsorAccountBank, 
+		                sponsor_account_holder sponsorAccountHolder, 
+		                sponsor_account_img sponsorAccountImg, center_state centerState
+		             from center where ${colName} like ${find}) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getCenterStateCount" resultType="hashmap">
+		<![CDATA[
+			select center_state centerState, count(*) count from center group by center_state order by center_state asc
+		]]>
+	</select>
+	
+	<!-- 센터 상태 가져오기  -->
+	<select id="getCenterState" resultType="int" parameterType="string">
+		<![CDATA[
+			select center_state centerState from center where center_id=#{centerId}
+		]]>
+	</select>
+	
+	<delete id="deleteAuthority" parameterType="string" >
+		delete from authorities where id = #{centerId}
+	</delete>
+	
+</mapper>
+

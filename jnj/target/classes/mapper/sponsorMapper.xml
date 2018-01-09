@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="sponsorMapper">
+
+
+
+
+<!-- 수안 -->
+<!-- 0. 후원 전체 글 갯수 가져오기 -->
+<select id="getSponsorCount" resultType="int">
+   <![CDATA[
+      select count(*) from pet where (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))<=15 and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>0 and pet_state<>0 
+   ]]>
+</select>
+<!-- 0_1. 후원 필터 글 갯수 가져오기 -->
+<select id="getSponsorFilterCount" resultType="int" parameterType="int">
+   <![CDATA[
+      select count(*) from pet where pet_sort=#{petSort} and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))<=15 and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>0 and pet_state<>0 
+   ]]>
+</select>
+
+<!-- 1_1. 후원 전체 리스트: 필터 -->
+<select id="getAllSponsorList" parameterType="hashmap" resultType="sponsorDomain">
+   <![CDATA[
+      select * from 
+    (select rownum rnum, list.* from 
+    
+    
+        (select s.sponsor_no sponsorNo, p.pet_no petNo, p.pet_name petName, p.pet_sort petSort, p.kind kind, 
+        s.sponsor_money sponsorMoney, 
+        
+        decode(s.sponsor_money,0,0,round((s.sponsor_money/s.goal_money)*100))goalPercent, 
+        s.goal_money goalMoney,
+        to_char((to_date(to_char(p.mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd'))))mercyDate, 
+        i.pet_img petImg
+        
+        from pet p, (select s1.* from pet_sponsor s1,(select pet_no,max(sponsor_no)sponsor_no from pet_sponsor group by pet_no)s2 where s1.sponsor_no = s2.sponsor_no and s1.pet_no = s2.pet_no) s, pet_img i 
+        
+        where p.pet_no=i.pet_no and p.pet_no=s.pet_no 
+        and i.pet_img_no=1 and p.pet_state in(1,2)
+        and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))<=15 
+        and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>0 
+        order by p.mercy_date asc)list 
+        
+        
+		where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+   ]]>
+</select>
+
+
+<!-- 1_2. 후원 리스트: 필터 -->
+<select id="getSponsorList" parameterType="hashmap" resultType="sponsorDomain">
+   <![CDATA[
+      select * from 
+    (select rownum rnum, list.* from 
+        (select s.sponsor_no sponsorNo, p.pet_no petNo, p.pet_name petName, p.pet_sort petSort, p.kind kind, s.sponsor_money sponsorMoney, 
+        decode(s.sponsor_money,0,0,round((s.sponsor_money/s.goal_money)*100))goalPercent, s.goal_money goalMoney,
+        to_char((to_date(to_char(p.mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd'))))mercyDate, i.pet_img petImg
+        from pet p, (select s1.* from pet_sponsor s1,(select pet_no,max(sponsor_no)sponsor_no from pet_sponsor group by pet_no)s2 where s1.sponsor_no = s2.sponsor_no and s1.pet_no = s2.pet_no) s, pet_img i 
+        where p.pet_no=i.pet_no and p.pet_no=s.pet_no 
+        and i.pet_img_no=1 and p.pet_state in(1,2) and p.pet_sort=#{petSort}
+        and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))<=15 and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>0
+        order by p.mercy_date asc)list 
+		where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+   ]]>
+</select>
+
+
+<!-- 2_1. 후원 뷰화면 뿌리기_글 -->
+<select id="getSponsorView" parameterType="int" resultType="sponsorDomain">
+   <![CDATA[
+   	select s.sponsor_no sponsorNo, p.pet_no petNo, p.pet_state petState, p.pet_name petName, p.pet_sort petSort, c.center_name centerName, p.kind kind, p.gender gender, p.age age, p.weight weight, p.disease disease, to_char(p.mercy_date,'yyyy-MM-dd') mercyDate, c.center_addr centerAddr, c.center_tel centerTel, c.email centerEmail, p.feature feature, 
+   	decode(s.sponsor_money,0,0,round((s.sponsor_money/s.goal_money)*100))goalPercent, s.sponsor_money sponsorMoney, s.achieve_date achieveDate, s.goal_money goalMoney, to_char((to_date(to_char(p.mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd'))))mercyDDay 
+   	from pet p, (select s1.* from pet_sponsor s1,(select pet_no,max(sponsor_no)sponsor_no from pet_sponsor group by pet_no)s2 where s1.sponsor_no = s2.sponsor_no and s1.pet_no = s2.pet_no) s, center c 
+   	where p.pet_no=s.pet_no and p.center_id=c.center_id and p.pet_no=#{petNo}
+   ]]>
+</select>
+
+
+<!-- 2_2. 후원 뷰화면 뿌리기_이미지 -->
+<select id="getSponsorViewPicture" parameterType="int" resultType="petImg">
+   <![CDATA[
+   	select pet_no petNo, pet_img_no petImgNo, pet_img petImg from pet_img where pet_no=#{petNo}
+   ]]>
+</select>
+
+
+
+
+<!-- 결제 진행 순서 -->
+<!-- 1. 현재 후원자의 memberSponsorNo 조회 --> 
+<select id="selectMemberSponsorNo" parameterType="sponsorPayInfo" resultType="int">
+	<![CDATA[
+		select nvl(max(member_sponsor_no),0) from member_sponsor_record where member_id=#{memberId} and pet_no=#{petNo} and sponsor_no=#{sponsorNo}
+	]]>
+</select>
+
+
+<!-- 2. 회원의 후원 내역에 등록하기 -->
+<insert id="insertMemberSponsorRecord" parameterType="sponsorPayInfo">
+	<![CDATA[
+		insert into member_sponsor_record values(#{memberId},#{petNo},#{sponsorNo},#{memberSponsorNo},#{payMoney},#{payWay},#{depositor},sysdate,#{sponsorReply})
+	]]>
+</insert>
+
+
+<!-- 3. 회원이 후원한 유기동물후원에 금액 올려주기 -->
+<update id="updatePetSponsorMoney" parameterType="sponsorPayInfo">
+	<![CDATA[
+		update pet_sponsor set sponsor_money=sponsor_money+#{payMoney} where pet_no=#{petNo} and sponsor_no=#{sponsorNo}
+	]]>
+</update>
+
+<update id="updatePetSponsorAchieveDate">
+	<![CDATA[
+		update pet_sponsor set achieve_date=sysdate where pet_no=#{petNo} and sponsor_no=#{sponsorNo}
+	]]>
+</update>
+
+
+
+<!-- 4. 덧글 기본값에서 수정 -->
+<update id="updateMemberSponsorReply" parameterType="sponsorPayInfo">
+	<![CDATA[
+		update member_sponsor_record set sponsor_reply=#{sponsorReply} where member_id=#{memberId} and pet_no=#{petNo} and sponsor_no=#{sponsorNo} and member_sponsor_no=#{memberSponsorNo}
+	]]>
+</update>
+
+
+
+<!-- 후원 덧글 리스트 갯수 -->
+<select id="getSponsorReplyCount" resultType="int" parameterType="int">
+   <![CDATA[
+		select count(*) from member_sponsor_record where pet_no=#{petNo}
+   ]]>
+</select>
+
+
+<!-- 후원 덧글 리스트 페이징 -->
+<select id="getSponsorReplyList" parameterType="hashmap" resultType="memberSponsorRecord">
+	<![CDATA[
+		select * from 
+		(select rownum rnum, list.* from 
+        (select pay_money payMoney, sponsor_reply sponsorReply, member_id memberId, 
+        to_char(sponsor_date,'yyyy-MM-dd')sponsorDate 
+        from member_sponsor_record where pet_no=#{petNo} order by sponsor_date desc)list 
+		where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+	]]>
+</select>
+
+
+
+
+<!-- 후원50만원 달성해서 후원번호 2되는애들 -->
+<!-- petSponsor 테이블에 sponsor_no +1로 인서트-->
+<insert id="insertChangePetSponsor" parameterType="sponsorPayInfo">
+	<![CDATA[
+		insert into pet_sponsor values(#{petNo},#{sponsorNo},500000,#{sponsorMoney},null)
+	]]>
+</insert>
+
+
+<!-- sponsor_no +1된 애들의 mercyDate+15로 업데이트  -->
+<update id="updateMercyDate" parameterType="sponsorPayInfo">
+	<![CDATA[
+		update pet set mercy_date=to_char(to_date(mercy_date, 'rr/MM/dd') + 15) where pet_no=#{petNo}
+	]]>
+</update>
+
+
+
+
+
+<!-- 창재 -->
+<!-- 유기동물 후원 등록하기 -->
+<insert id="insertPetSponsor" parameterType="petSponsor">
+	<![CDATA[
+		insert into pet_sponsor values(#{petNo}, #{sponsorNo}, #{goalMoney}, 0, null)
+	]]>
+</insert>
+
+<!-- 월별 후원내역의 총 월 수 -->
+<select id="getMonthNum" resultType="int" parameterType="string">
+   <![CDATA[
+		select count(*) from (select to_char(nvl(achieve_date,sysdate),'yyyy.MM') mon from pet_sponsor, pet where pet_sponsor.PET_NO=pet.PET_NO and center_id=#{centerId} group by to_char(nvl(achieve_date,sysdate),'yyyy.MM'))
+   ]]>
+</select>
+
+<!-- 월별 총 후원내역 -->
+<select id="getSponsorMonthlyRecord" resultType="cSponsorMonthlyRecord" parameterType="hashmap">
+   <![CDATA[
+		select h2.* from
+		(select rownum rnum, h.* from
+		(select to_char(sponsor_date,'yyyy.MM') month, sum(pay_money) totalSponsorMoney from member_sponsor_record, pet where member_sponsor_record.PET_NO=pet.PET_NO and center_id=#{centerId} group by to_char(sponsor_date,'yyyy.MM')) h 
+		where rownum<=#{endArticleNum}) h2
+		where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+<!-- 후원 월별 상세내역의 총 내역 수 -->
+<select id="getSponsorDPNum" resultType="int" parameterType="hashmap">
+   <![CDATA[
+		select count(*) from pet, (select pet_no petNo, to_char(sponsor_date, 'yyyy-MM-dd') sponsorDate, sum(PAY_MONEY) sumDP from member_sponsor_record group by pet_no, to_char(sponsor_date, 'yyyy-MM-dd')) sr where pet_no=petNo and center_id=#{centerId} and to_char(to_date(sponsorDate), 'yyyy.MM')=#{month}
+   ]]>
+</select>
+
+<!-- 후원 월별상세내역 (날짜-동물별) -->
+<select id="getSponsorDPRecord" resultType="cSponsorDPRecord" parameterType="hashmap">
+   <![CDATA[
+		select h2.* from
+		(select rownum rnum, h.* from
+		(select pet_name petName, sr.* from pet, 
+		(select pet_no petNo, to_char(sponsor_date, 'yyyy-MM-dd') sponsorDate, sum(PAY_MONEY) sumDP 
+		from member_sponsor_record group by pet_no, to_char(sponsor_date, 'yyyy-MM-dd')) sr 
+		where pet_no=petNo and center_id=#{centerId} and to_char(to_date(sponsorDate), 'yyyy.MM')=#{month} order by sponsorDate desc, petNo) h
+		where rownum<=#{endArticleNum}) h2
+		where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+
+<!-- 혜미 -->
+<!-- 마이페이지 후원내역ㅇㅅㅇ -->
+<select id="getMypageMemberSponsor" parameterType="hashmap" resultType="hashmap">
+   <![CDATA[
+   select h2.* from
+(select rownum rnum, h.* from
+(select c.center_name centerName, p.pet_no petNo ,p.pet_sort petSort, p.pet_name petName, p.pet_state petState, m.pay_money payMoney, to_char(m.sponsor_date,'yyyy-MM-dd') sponsorDate
+from center c, pet p, member_sponsor_record m where c.center_id= p.center_id and p.pet_no= m.pet_no
+and m.member_id=#{memberId} order by ${colName} ${sortType}) h where rownum<=#{endArticleNum})h2
+where rnum>=#{startArticleNum}
+   ]]>
+</select>
+<!-- 마이페이지 후원내역 글 가져오는데 조건달아서ㅇㅅㅇ -->
+<select id="getSponsorCountMypage" parameterType="String" resultType="int">
+   <![CDATA[
+      select count(*) from pet p, member_sponsor_record m where m.pet_no=p.pet_no and m.member_id=#{memberId}
+   ]]>
+</select>
+	
+	
+	
+	<!-- 주리 입니다. -->
+	<!-- 해당 회원의 필터, 검색 별 후원 내역의 총 개수 -->
+	<select id="getCountMemberSponsorList" parameterType="AdMSponsorInfo" resultType="int">
+		select count(*) from 
+             ( select m.member_id memberId, m.pet_no petNo,
+                m.sponsor_no sponsorNo,
+                m.member_sponsor_no memberSponsorNo, 
+                m.pay_money payMoney, m.pay_way payWay, depositor, 
+                to_char(m.sponsor_date, 'yyyyMMdd') sponsorDate, m.sponsor_reply sponsorReply,
+                c.center_name centerName, 
+                p.CENTER_ID centerId, p.pet_sort petSort, p.PET_NAME petName, p.PET_STATE petState
+              	from 
+              		(select * from MEMBER_SPONSOR_RECORD where member_id=#{memberId})m, pet p, center c
+              	where m.pet_no=p.pet_no and p.center_id=c.center_id)
+        	${sqlText} order by ${colName} ${sortType}
+	</select>
+	
+	<!-- 해당 회원의 후원 내역 리스트( 센터명,분류, 이름, 상태, 후원금, 날짜 )  / 필터, 검색-->
+	<select id="getMemberSponsorList" parameterType="AdMSponsorInfo" resultType="adMSponsorRecord" >
+		<![CDATA[
+		select * from 
+          (select rownum rnum, list.* from( 
+            select * from 
+             ( select m.member_id memberId, m.pet_no petNo,
+                m.sponsor_no sponsorNo,
+                m.member_sponsor_no memberSponsorNo, 
+                m.pay_money payMoney, m.pay_way payWay, depositor, 
+                to_char(m.sponsor_date, 'yyyyMMdd') sponsorDate, m.sponsor_reply sponsorReply,
+                c.center_name centerName, 
+                p.CENTER_ID centerId, p.pet_sort petSort, p.PET_NAME petName, p.PET_STATE petState
+              from (select * from MEMBER_SPONSOR_RECORD where member_id=#{memberId})m, pet p, center c
+              where m.pet_no=p.pet_no and p.center_id=c.center_id)
+            ${sqlText} order by ${colName} ${sortType} )list 
+         where rownum<=#{endArticleNum}) 
+      where rnum >=#{startArticleNum}
+      ]]>
+	</select>
+	
+	<!-- 해당 회원의 총 후원금 계산 -->
+	<select id="getTotalMoneyMemberSponor" parameterType="string" resultType="int">
+		select nvl(sum(pay_money),0) from member_sponsor_record where member_id=#{memberId}
+	</select>
+	
+	
+	<!-- 센터가 등록한 동물로 받은 총 후원금 -->
+	<select id="getTotalMoneyCenterSponor" parameterType="string" resultType="int">
+		select nvl(sum(sponsor_money),0) totalCenterSponorMoney from pet p, pet_sponsor s where p.pet_no=s.pet_no and p.center_id=#{centerId}
+	</select>
+	
+	
+	<!-- 센터의 동물 후원 받은 금액 내역 가져오기 -->
+	<select id="getCountCenterSponsorPetList" parameterType="adCSponsorInfo" resultType="int">
+		<![CDATA[
+	            select count(*) from 
+	             (select 
+	                             p1.pet_no petNo, 
+			                     p1.pet_name petName, 
+			                     p1.pet_sort petSort, 
+			                     p1.kind kind, 
+			                     p1.gender gender, 
+			                     p1.neutral neutral, 
+			                     p1.age age, 
+			                     p1.weight weight, 
+			                     p1.disease disease, 
+			                     p1.feature feature, 
+			                     to_char(p1.mercy_date, 'yyyyMMdd') mercyDate, 
+			                     to_char(p1.write_date, 'yyyyMMdd') writeDate, 
+			                     p1.center_id centerId, 
+			                     p1.pet_state petState,
+	                             i.pet_img petImg,
+	                             m.sponsorMoney sponsorMoney
+	                        from pet p1, 
+	                             pet_img i,
+	                             (select s.pet_no petNO, sum(s.sponsor_money) sponsorMoney 
+	                                    from pet_sponsor s, (select * from pet where center_id=#{centerId}) p
+	                                    where s.pet_no=p.pet_no group by s.pet_no) m
+	                        where p1.pet_no=m.petNo and p1.pet_no=i.pet_no and i.pet_img_no=1)
+	            ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getCenterSponsorPetList" parameterType="adCSponsorInfo" resultType="pet">
+		<![CDATA[
+			select * from 
+	          (select rownum rnum, list.* from( 
+	            select * from 
+	             (select 
+	                             p1.pet_no petNo, 
+			                     p1.pet_name petName, 
+			                     p1.pet_sort petSort, 
+			                     p1.kind kind, 
+			                     p1.gender gender, 
+			                     p1.neutral neutral, 
+			                     p1.age age, 
+			                     p1.weight weight, 
+			                     p1.disease disease, 
+			                     p1.feature feature, 
+			                     to_char(p1.mercy_date, 'yyyyMMdd') mercyDate, 
+			                     to_char(p1.write_date, 'yyyyMMdd') writeDate, 
+			                     p1.center_id centerId, 
+			                     p1.pet_state petState,
+	                             i.pet_img petImg,
+	                             m.sponsorMoney sponsorMoney
+	                        from pet p1, 
+	                             pet_img i,
+	                             (select s.pet_no petNO, sum(s.sponsor_money) sponsorMoney 
+	                                    from pet_sponsor s, (select * from pet where center_id=#{centerId}) p
+	                                    where s.pet_no=p.pet_no group by s.pet_no) m
+	                        where p1.pet_no=m.petNo and p1.pet_no=i.pet_no and i.pet_img_no=1)
+	            ${sqlText} order by ${colName} ${sortType} )list 
+	         where rownum<=#{endArticleNum}) 
+	      where rnum >=#{startArticleNum}		
+		]]>
+	</select>
+	
+	<!-- 해당 동물이 후원을 몇번째 얼마나 받았는지 리스트를 가져온다  -->
+	<select id="getCountPetSponsor" parameterType="adCSponsorDetailInfo" resultType="int">
+		<![CDATA[
+	            select count(*) from 
+	             (select 
+                    pet_no petNo, 
+                    sponsor_no sponsorNo, 
+                    goal_money goaslMoney, 
+                    sponsor_money sponsorMoney, 
+                    to_char(achieve_date,'yyyyMMdd') achieveDate 
+                from pet_sponsor where pet_no=#{petNo})
+	            ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getPetSponsor" parameterType="adCSponsorDetailInfo" resultType="petSponsor">
+		<![CDATA[
+			 select * from 
+	          (select rownum rnum, list.* from( 
+	            select * from 
+	             (select 
+                    pet_no petNo, 
+                    sponsor_no sponsorNo, 
+                    goal_money goalMoney, 
+                    sponsor_money sponsorMoney, 
+                    to_char(achieve_date,'yyyyMMdd') achieveDate 
+                from pet_sponsor where pet_no=#{petNo})
+	            ${sqlText} order by ${colName} ${sortType} )list 
+	         where rownum<=#{endArticleNum}) 
+	      where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	
+	
+	<!-- 후원 총 누적 매출 -->
+	<select id="getTotalSponsorMoney" parameterType="hashmap" resultType="int">
+		select nvl(sum(pay_money),0) payMoney from member_sponsor_record ${sqlWhere}
+	</select>
+	
+	<!-- 후원 매출 내역 -->
+	<select id="getCountTotalSponsorList" parameterType="adSalesInfo" resultType="int">
+		<![CDATA[
+					select count(*) from
+						(select
+							m.member_id memberId,
+							p.center_id centerId,
+							p.pet_sort petSort,
+							p.pet_name petName,
+							m.pay_money payMoney,
+							to_char(m.sponsor_date,'yyyyMMdd') sponsorDate
+						from member_sponsor_record m, pet p
+						where m.pet_no=p.pet_no)
+					${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getTotalSponsorList" parameterType="adSalesInfo" resultType="memberSponsorRecord">
+		<![CDATA[
+			select * from
+				(select rownum rnum, list.* from(
+					select * from
+						(select
+							m.member_id memberId,
+							p.center_id centerId,
+							p.pet_sort petSort,
+							p.pet_name petName,
+							m.pay_money payMoney,
+							to_char(m.sponsor_date,'yyyyMMdd') sponsorDate
+						from member_sponsor_record m, pet p
+						where m.pet_no=p.pet_no)
+					${sqlText} order by ${colName} ${sortType} )list
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+
+</mapper>
+
+
+
+

@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="storeMapper">
+	<!-- 페이지네이션을 위한 전체 스토어리스트 개수 -->
+	<select id="getStoreAllCnt" resultType="int">
+		<![CDATA[
+			select count(*) from goods
+		]]>
+	</select>
+	<!-- 페이지네이션을 위한 카테고리별 스토어리스트 개수 -->
+	<select id="getStoreCateCnt" resultType="int" parameterType="string">
+		<![CDATA[
+			select count(*) from goods where category_name=#{categoryName}
+		]]>
+	</select>
+	<!-- 페이지네이션을 위한 검색 스토어리스트 개수 -->
+	<select id="getStoreSearchCnt" resultType="int" parameterType="string">
+		<![CDATA[
+			select count(*) from goods where goods_name like '%'||#{keyword}||'%'
+		]]>
+	</select>
+	<!-- 상단 인기순 4개 (스토어리스트) -->
+	<select id="getInterestList" resultType="hashmap">
+		<![CDATA[
+			select sell_qnt, g.goods_no goodsNo, goods_img goodsImg, goods_name goodsName, 
+			goods_price goodsPrice, g.goods_state goodsState from goods g, goods_img gi 
+			where g.goods_no=gi.goods_no and goods_img_no=1 and goods_state!=2
+			order by sell_qnt desc, goodsNo desc
+		]]>
+	</select>
+	<!-- 전체 카테고리 - 스토어리스트 12개 (스토어리스트) -->
+	<select id="getStoreListAll" resultType="hashmap" parameterType="hashmap">
+		<![CDATA[
+			select g2.* from (select rownum rnum, g1.* from (select g.goods_no goodsNo, gi.goods_img goodsImg, g.goods_name goodsName, 
+			g.goods_price goodsPrice, g.goods_state goodsState 
+            from (select * from goods order by 1 desc) g, goods_img gi 
+			where g.goods_no=gi.goods_no and goods_img_no=1 and goods_state!=2
+			order by ${colName} ${sortType}) g1 where rownum<=#{endArticleNum}) g2 where rnum>=#{startArticleNum}
+		]]>
+	</select>
+	<!-- 그 외 카테고리 - 스토어리스트 12개 (스토어리스트) -->
+	<select id="getStoreListCate" resultType="hashmap" parameterType="hashmap">
+		<![CDATA[
+			select g2.* from (select rownum rnum, g1.* from (select g.goods_no goodsNo, gi.goods_img goodsImg, g.goods_name goodsName, 
+			g.goods_price goodsPrice, g.goods_state goodsState 
+            from (select * from goods order by 1 desc) g, goods_img gi 
+			where g.goods_no=gi.goods_no and goods_img_no=1 and category_name=#{categoryName} 
+			order by ${colName} ${sortType}) g1 where rownum<=#{endArticleNum}) g2 where rnum>=#{startArticleNum}
+		]]>
+	</select>
+	<!-- 검색 (스토어리스트) -->
+	<select id="getStoreSearch" resultType="hashmap" parameterType="hashmap">
+		<![CDATA[
+			select g2.* from (select rownum rnum, g1.* from (select g.goods_no goodsNo, gi.goods_img goodsImg, g.goods_name goodsName, 
+			g.goods_price goodsPrice, g.goods_state goodsState 
+            from (select * from goods order by 1 desc) g, goods_img gi 
+			where g.goods_no=gi.goods_no and goods_img_no=1 and goods_name like '%'||#{keyword}||'%' 
+			order by ${colName} ${sortType}) g1 where rownum<=#{endArticleNum}) g2 where rnum>=#{startArticleNum}
+		]]>
+	</select>
+	
+	
+	
+	
+	
+	
+	<!-- 상품번호, 상품명, 상품가격, 상품내용 (스토어뷰) -->
+	<select id="getViewGoods" resultType="goods" parameterType="int">
+		<![CDATA[
+			select goods_no goodsNo, goods_name goodsName, goods_price goodsPrice, 
+			goods_content goodsContent, stock_qnt stockQnt, goods_state goodsState 
+			from goods where goods_no=#{goodsNo}
+		]]>
+	</select>
+	<!-- 상품이미지 (스토어뷰) -->
+	<select id="getViewImg" resultType="string" parameterType="int">
+		<![CDATA[
+			select goods_img goodsImg from goods_img where goods_no=#{goodsNo}
+		]]>
+	</select>
+	<!-- 상품옵션 (스토어뷰) -->
+	<select id="getViewOption" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select option_no optionNo, option_content optionContent from goods_option where goods_no=#{goodsNo}
+		]]>
+	</select>
+	
+	
+	
+	
+	
+	
+	<!-- 상품후기 보기 (스토어뷰) -->
+	<select id="getStoreReview" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select satisfy, go.option_no optionNo, option_content optionContent, review_content reviewContent, 
+			write_id writeId, review_no reviewNo, to_char(write_date, 'yyyy-MM-dd') writeDate 
+			from review r, goods_option go 
+			where r.goods_no=go.goods_no and r.option_no=go.option_no and r.goods_no=#{goodsNo} 
+			order by reviewNo desc
+		]]>
+	</select>
+	<!-- 상품후기 작성 (스토어뷰) -->
+	<insert id="insertStoreReview" parameterType="review">		
+		<![CDATA[
+			insert into review values ( review_no_seq.nextval, #{goodsNo}, #{optionNo}, #{writeId}, 
+			#{satisfy}, #{reviewContent}, sysdate)
+		]]>
+	</insert>
+	<!-- 상품후기 수정 - 만족도, 구매옵션, 내용, 날짜 (스토어뷰) -->
+	<update id="updateStoreReview" parameterType="review">
+		<![CDATA[
+			update review set option_no=#{optionNo}, satisfy=#{satisfy}, 
+			review_content=#{reviewContent}, write_date=sysdate
+			where goods_no=#{goodsNo} and review_no=#{reviewNo} 
+		]]>
+	</update>
+	<!-- 상품후기 삭제 (스토어뷰) -->
+	<delete id="deleteStoreReview" parameterType="int">
+		<![CDATA[
+			delete from review where review_no=#{reviewNo}
+		]]>
+	</delete>
+	
+	
+	
+	
+	<!-- 내 구매내역 리스트 -->
+	<!-- 이미지 (구매리스트) -->
+	<select id="getOrderListImg" resultType="hashmap" parameterType="string">
+		<![CDATA[
+			select gi.goods_img goodsImg, ore.order_no orderNo, ore.goods_no goodsNo, 
+			ore.option_no optionNo
+			from orders_record ore, goods_img gi, orders o 
+			where ore.goods_no=gi.goods_no and ore.order_no=o.order_no 
+			and o.order_id=#{orderId} and goods_img_no=1
+			and (ore.goods_no, ore.option_no) = 
+			(select min(goods_no), min(option_no) from orders_record ore2
+			where ore2.order_no=ore.order_no group by order_no) 
+			order by orderNo desc
+		]]>
+	</select>
+	<!-- 굿즈 이름 (구매리스트) -->
+	<select id="getOrderListGoodsName" resultType="hashmap" parameterType="string">
+		<![CDATA[
+			select g.goods_name goodsName, ore.order_no orderNo, ore.goods_no goodsNo, ore.option_no optionNo
+			from orders_record ore, goods g, orders o 
+			where ore.goods_no=g.goods_no and ore.order_no=o.order_no and o.order_id=#{orderId}
+			and (ore.goods_no, ore.option_no) = 
+			(select min(goods_no), min(option_no) from orders_record ore2
+			where ore2.order_no=ore.order_no group by order_no) 
+			order by orderNo desc
+		]]>
+	</select>
+	<!-- 굿즈 옵션 (구매리스트) -->
+	<select id="getOrderListGoodsOption" resultType="hashmap" parameterType="string">
+		<![CDATA[
+			select go.option_content optionContent, ore.order_no orderNo, ore.goods_no goodsNo, ore.option_no optionNo
+			from orders_record ore, goods_option go, orders o 
+			where ore.goods_no=go.goods_no and ore.option_no=go.option_no 
+			and ore.order_no=o.order_no and o.order_id=#{orderId}
+			and (ore.goods_no, ore.option_no) = 
+			(select min(goods_no), min(option_no) from orders_record ore2
+			where ore2.order_no=ore.order_no group by order_no) 
+			order by orderNo desc
+		]]>
+	</select>
+	<!-- 수량 -->
+	<select id="getOrderListQnt" resultType="int" parameterType="int">
+		<![CDATA[
+			select sum(order_qnt) orderQnt from orders_record where order_no=#{orderNo}
+		]]>
+	</select>
+	<!-- 주문번호, 날짜, 총금액, 상태 (구매리스트) -->
+	<select id="getOrderListOrders" resultType="hashmap" parameterType="hashmap">
+		<![CDATA[
+			select g2.* from (select rownum rnum, g1.* from (
+			select distinct o.order_no orderNo, to_char(o.order_date,'yyyy-MM-dd') orderDate, 
+			o.pay_money payMoney, o.order_state orderState
+			from orders o, orders_record ore where o.order_id=#{orderId} and o.order_no=ore.order_no 
+			order by orderNo desc)
+			g1 where rownum<=#{endArticleNum}) g2 where rnum>=#{startArticleNum}
+		]]>
+	</select>
+	<!-- 내 구매리스트 개수 -->
+	<select id="getOrderListOrdersCnt" parameterType="string" resultType="int">
+		<![CDATA[
+			select count(*) from orders where order_id=#{orderId}
+		]]>
+	</select>
+	
+	
+	
+	
+	
+	<!-- 내 구매내역 뷰 -->
+	<!-- 이미지 (구매상세/교환/환불) -->
+	<select id="getOrderViewImg" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select ore.goods_no goodsNo, goods_img goodsImg from goods_img gi, orders_record ore 
+			where gi.goods_no=ore.goods_no and ore.order_no=#{orderNo} and gi.GOODS_IMG_NO=1 
+			order by goodsNo
+		]]>
+	</select>
+	<!-- 주문번호, 굿즈 번호, 이름, 수량, 건당 금액, 상태 (구매상세/교환/환불) -->
+	<select id="getOrderViewOrders" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select ore.option_no optionNo, ore.order_no orderNo, g.goods_no goodsNo, 
+			g.goods_name goodsName, ore.order_qnt orderQnt, ore.money money, 
+			ore.order_record_state orderRecordState from goods g, orders_record ore 
+			where g.goods_no=ore.goods_no and ore.order_no=#{orderNo} 
+			order by goodsNo, optionNo
+		]]>
+	</select>
+	<!-- 옵션 (구매상세/교환/환불) -->
+	<select id="getOrderViewOption" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select ore.order_no, ore.goods_no, go.option_content optionContent, go.option_no optionNo 
+			from goods_option go, orders_record ore 
+			where go.goods_no=ore.goods_no and go.option_no=ore.option_no 
+			and ore.order_no=#{orderNo} order by ore.goods_no, go.option_no
+		]]>
+	</select>
+	<!-- 배송지 정보 (구매상세) -->
+	<select id="getOrderViewDelivery" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select recipient, recipient_addr recipientAddr, order_tel orderTel, memo 
+			from orders where order_no=#{orderNo}
+		]]>
+	</select>
+	<!-- 주문정보, 결제정보 (구매상세) -->
+	<select id="getOrderViewPay" resultType="hashmap" parameterType="int">
+		<![CDATA[
+			select order_no orderNo, to_char(order_date, 'yyyy-MM-dd') orderDate, order_id orderId, order_state orderState, 
+			pay_money payMoney, pay_way payWay, depositor from orders where order_no=#{orderNo}
+		]]>
+	</select>
+	<!-- 총 금액 (교환/환불) -->
+	<select id="getOrderViewPayMoney" resultType="int" parameterType="int">
+		<![CDATA[
+			select pay_money payMoney from orders where order_no=#{orderNo}
+		]]>
+	</select>
+	
+	
+	
+	<!-- 구매확정에 따른 주문상세내역 상태 변경 -->
+	<update id="updateSuccessOrdersRecord" parameterType="hashmap">
+		<![CDATA[
+			update orders_record set order_record_state=9 
+			where order_no=#{orderNo} and goods_no=#{goodsNo} and option_no=#{optionNo}
+		]]>
+	</update>
+	<!-- 구매확정에 따른 주문내역 상태 변경 -->
+	<update id="updateSuccessOrders" parameterType="int">
+		<![CDATA[
+			update orders set order_state=9 where order_no=#{orderNo}
+		]]>
+	</update>
+
+	
+	
+	
+	
+	<!-- 글쓰기 (교환/환불) -->
+	<insert id="insertRefund" parameterType="refund">		
+		<![CDATA[
+			insert into refund values(#{orderNo}, #{goodsNo}, #{optionNo}, #{refundDivision}, sysdate, 
+			#{refundAccountNo, jdbcType=VARCHAR}, #{refundAccountBank, jdbcType=VARCHAR}, #{refundAccountHolder, jdbcType=VARCHAR}, #{refundReason})
+		]]>
+	</insert>
+	<!-- 교환/환불에 따른 주문상세내역 상태 변경 - 접수 (교환/환불) -->
+	<update id="updateOrdersRecordStateByRefund" parameterType="hashmap">
+		<![CDATA[
+			update orders_record set order_record_state=6 
+			where order_no=#{orderNo} and goods_no=#{goodsNo} and option_no=#{optionNo}
+		]]>
+	</update>
+	<!-- 교환/환불에 따른 주문내역 상태 변경 - 접수 (교환/환불) -->
+	<update id="updateOrdersStateByRefund" parameterType="int">
+		<![CDATA[
+			update orders set order_state=6 where order_no=#{orderNo}
+		]]>
+	</update>
+	
+	
+	
+	
+	
+	<!-- 주문취소에 따른 주문상세내역 상태 변경 (0) -->
+	<update id="updateCancelOrdersRecord" parameterType="int">
+		<![CDATA[
+			update orders_record set order_record_state=0 where order_no=#{orderNo}
+		]]>
+	</update>
+	<!-- 주문취소에 따른 주문내역 상태 변경 (0) -->
+	<update id="updateCancelOrders" parameterType="int">
+		<![CDATA[
+			update orders set order_state=0 where order_no=#{orderNo}
+		]]>
+	</update>
+	
+	
+	
+	
+
+	<!-- 구매정보 입력 페이지 -->
+	<!-- 이미지 -->
+	<select id="getGoodsImgForPay" parameterType="int" resultType="string">
+		<![CDATA[
+			select goods_img goodsImg from goods_img where goods_no=#{goodsNo} and goods_img_no=1
+		]]>
+	</select>	
+	<!-- 굿즈번호, 이름, 가격 -->
+	<select id="getGoodsForPay" parameterType="int" resultType="hashmap">
+		<![CDATA[
+			select goods_no goodsNo, goods_name goodsName, goods_price goodsPrice from goods where goods_no=#{goodsNo}
+		]]>
+	</select>	
+	<!-- 옵션번호, 옵션내용 -->
+	<select id="getGoodsOptionForPay" parameterType="hashmap" resultType="hashmap">
+		<![CDATA[
+			select option_no optionNo, option_content optionContent from goods_option where goods_no=#{goodsNo} and option_no=#{optionNo}
+		]]>
+	</select>	
+	
+	
+	
+	<!-- 구매하기 -->
+	<insert id="insertOrders" parameterType="orders">		
+		<![CDATA[
+			insert into orders values(#{orderNo}, #{orderId}, #{orderTel}, #{recipient}, 
+			#{recipientAddr}, #{memo}, #{payMoney}, #{payWay}, #{depositor, jdbcType=VARCHAR}, sysdate, #{orderState})
+		]]>
+	</insert>
+	<!-- 구매하기 상세 -->
+	<insert id="insertOrdersRecord" parameterType="ordersRecord">		
+		<![CDATA[
+			insert into orders_record values(#{orderNo}, #{goodsNo}, #{optionNo}, #{orderQnt},
+			#{money}, #{orderRecordState})
+		]]>
+	</insert>
+	<!-- 마지막 주문번호 -->
+	<select id="getMaxOrderNo" resultType="int">
+		<![CDATA[
+			select nvl(max(order_no),0) from orders
+		]]>
+	</select>
+	<!-- 상품 재고수량, 판매수량 업데이트 -->
+	<update id="updateSellStockQnt" parameterType="hashmap">
+		<![CDATA[
+			update goods set sell_qnt=sell_qnt+#{orderQnt}, stock_qnt=stock_qnt-#{orderQnt} where goods_no=#{goodsNo}
+		]]>
+	</update>
+	
+	
+	<!-- 주리 0102 -->
+	<!-- 상품 등록 된 상품 목록을 가져온다 -->
+	<select id="getCountGoodsRegisterList" parameterType="adStoreInfo" resultType="int" >
+		<![CDATA[
+			            select count(*) 
+			                from  
+			                    (select 
+	                              g.goods_no goodsNo,
+	                              g.goods_name goodsName,
+	                              g.goods_content goodsContent,
+	                              g.goods_price goodsPrice,
+	                              g.stock_qnt stockQnt,
+	                              g.sell_qnt sellQnt,
+	                              g.category_name categoryName,
+	                              to_char(g.goods_date, 'yyyyMMdd') goodsDate,
+	                              g.goods_state goodsState,
+	                              i.GOODS_IMG goodsImg
+	                         from goods g, goods_img i
+	                         where g.GOODS_NO=i.GOODS_NO and i.GOODS_IMG_NO=1)
+			                    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getGoodsRegisterList" parameterType="adStoreInfo" resultType="goods" >
+		<![CDATA[
+			select * from 
+			       (select rownum rnum, list.* from
+			            (  select * 
+			                from  
+			                    (select 
+                              g.goods_no goodsNo,
+                              g.goods_name goodsName,
+                              g.goods_content goodsContent,
+                              g.goods_price goodsPrice,
+                              g.stock_qnt stockQnt,
+                              g.sell_qnt sellQnt,
+                              g.category_name categoryName,
+                              to_char(g.goods_date, 'yyyyMMdd') goodsDate,
+                              g.goods_state goodsState,
+                              i.GOODS_IMG goodsImg 
+	                         from goods g, goods_img i
+	                         where g.GOODS_NO=i.GOODS_NO and i.GOODS_IMG_NO=1)
+			                    ${sqlText} order by ${colName} ${sortType}) list
+			                where rownum<=#{endArticleNum}) 
+			      where rnum >=#{startArticleNum}
+		]]>      
+	</select>
+	<select id="getGoods" parameterType="int" resultType="goods">
+		select 
+			goods_no goodsNo,
+			goods_name goodsName,
+			goods_content goodsContent,
+			goods_price goodsPrice,
+			stock_qnt stockQnt,
+			sell_qnt sellQnt,
+			category_name categoryName,
+			to_char(goods_date, 'yyyyMMdd') goodsDate,
+			goods_state goodsState
+		from goods where goods_no=#{goodsNo}
+	</select>
+	<select id="getGoodsImg" parameterType="int" resultType="goodsImg">
+		select goods_no goodsNo, goods_img_no goodsImgNo, goods_img goodsImg from goods_img where goods_no=#{goodsNo} order by goods_img_no asc
+	</select>
+	<select id="getGoodsOption" parameterType="int" resultType="goodsOption">
+		select goods_no goodsNo, option_no optionNo, option_content optionContent from goods_option where goods_no=#{goodsNo} order by option_no asc
+	</select>
+	
+	
+	<!-- 상품 관련 등록 시 -->
+	<!-- 상품 등록 -->
+	<select id="getMaxGoodsNo" resultType="int">
+		select goods_no_seq.nextval from dual
+	</select>
+	<insert id="insertGoods">
+		insert into goods values( #{goodsNo}, #{goodsName}, #{goodsContent}, #{goodsPrice}, #{stockQnt}, 0, #{categoryName}, sysdate, #{goodsState} )
+	</insert>
+	
+	<!-- 상품 이미지 등록 -->
+	<insert id="insertGoodsImg">
+		insert into goods_img values( #{goodsNo}, #{goodsImgNo}, #{goodsImg} )
+	</insert>
+	
+	<!-- 상품 옵션 등록 -->
+	<insert id="insertGoodsOption">
+		insert into goods_option values( #{goodsNo},#{optionNo}, #{optionContent}) 
+	</insert>
+	
+	
+	
+	<!-- 상품 수정 시 -->
+	<update id="updateGoodsImg" parameterType="goodsImg" >
+		update goods_img set GOODS_IMG=#{goodsImg} 
+			where GOODS_NO=#{goodsNo} and GOODS_IMG_NO=#{goodsImgNo}
+	</update>
+	
+	<update id="updateGoods" parameterType="goods">
+		update goods set 
+			GOODS_NAME=#{goodsName}, 
+			GOODS_CONTENT=#{goodsContent}, 
+			GOODS_PRICE=#{goodsPrice}, 
+			stock_qnt=#{stockQnt}, 
+			category_name=#{categoryName}, 
+			goods_state=#{goodsState} 
+		where goods_no=#{goodsNo}
+	</update>
+	
+	<update id="updateGoodsOption" parameterType="goodsOption">
+		update goods_option set OPTION_CONTENT=#{optionContent}
+			where option_no=#{optionNo} and GOODS_NO=#{goodsNo}
+	</update>
+	
+	
+	
+	
+	
+	<!-- 상품 삭제 시  -->
+	<delete id="deleteGoodsImg" parameterType="int" >
+		delete from goods_img where goods_no=#{goodsNo}
+	</delete>
+	
+	<delete id="deleteGoodsOption" parameterType="int" >
+		delete from goods_option where goods_no==#{goodsNo}
+	</delete>
+	
+	<delete id="deleteGoods" parameterType="int" >
+		delete from goods where goods_no=#{goodsNo}
+	</delete>
+	
+	
+	
+	
+	<!-- 구매내역 관리 -->
+	<!-- 관리자가 주문내역 조회하기( 필터 검색 ) -->
+	<select id="getCountAdminOrdersList" parameterType="adOrdersInfo" resultType="int">
+		<![CDATA[
+				select count(*)
+					from
+						(select
+						order_no orderNo,
+						order_id orderId,
+						order_tel orderTel,
+						recipient,
+						recipient_addr recipientAddr,
+						memo,
+						pay_money payMoney,
+						pay_way payWay,
+						depositor,
+						to_char(order_date,'yyyyMMdd') orderDate,
+						order_state orderState
+						from orders
+						${sqlWhere})
+					${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getAdminOrdersList" parameterType="adOrdersInfo" resultType="orders">
+		<![CDATA[
+			select * from
+				(select rownum rnum, list.* from
+					(select *
+					from
+						(select
+						order_no orderNo,
+						order_id orderId,
+						order_tel orderTel,
+						recipient,
+						recipient_addr recipientAddr,
+						memo,
+						pay_money payMoney,
+						pay_way payWay,
+						depositor,
+						to_char(order_date,'yyyyMMdd') orderDate,
+						order_state orderState
+						from orders
+						${sqlWhere})
+					${sqlText} order by ${colName} ${sortType}) list
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	<select id="getAdminOrderState" parameterType="adOrdersInfo" resultType="hashmap">
+		select order_state orderState, count(*) count
+		from orders 
+		${sqlWhere} group by order_state
+	</select>
+	
+	<update id="updateOrdersState" parameterType="hashmap">
+		update orders set order_state=#{orderState} 
+			where order_no=#{orderNo}
+	</update>
+	<update id="updateOrdersRecordState" parameterType="hashmap">
+		update orders_record set order_record_state=#{orderState} 
+			where order_no=#{orderNo}
+	</update>
+	
+	
+	<!-- 스토어 판매 매출 내역  -->
+	<select id="getCountTotalStoreList" parameterType="adSalesStoreInfo" resultType="int">
+		<![CDATA[
+					select count(*)
+					from
+						(select 
+						    order_no orderNo,
+						    order_id orderId,
+						    order_tel orderTel,
+						    recipient,
+						    recipient_addr recipientAddr,
+						    memo,
+						    pay_money payMoney,
+						    pay_way payWay,
+						    depositor,
+						    to_char(order_date,'yyyyMMdd') orderDate,
+						    order_state orderState
+						from orders 
+						where order_state not in(6,7,8) )
+					${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getTotalStoreList" parameterType="adSalesStoreInfo" resultType="orders">
+		<![CDATA[
+			select * from
+				(select rownum rnum, list.* from
+					(select *
+					from
+						(select 
+						    order_no orderNo,
+						    order_id orderId,
+						    order_tel orderTel,
+						    recipient,
+						    recipient_addr recipientAddr,
+						    memo,
+						    pay_money payMoney,
+						    pay_way payWay,
+						    depositor,
+						    to_char(order_date,'yyyyMMdd') orderDate,
+						    order_state orderState
+						from orders 
+						where order_state not in(6,7,8) )
+					${sqlText} order by ${colName} ${sortType}) list
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	<select id="getTotalStoreMoney"  resultType="int">
+		select sum(pay_money) from orders where order_state not in(6,7,8)
+	</select>
+	
+</mapper>
+

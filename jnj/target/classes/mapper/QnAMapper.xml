@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="QnAMapper">
+
+	<!-- 수안============== -->
+	<!-- QNA 갯수 전체 가져오기 -->
+	<select id="qnaAllCount" resultType="int">
+		<![CDATA[
+			select count(*) from qna
+		]]>
+	</select>
+	
+	<select id="qnaCount" resultType="int" parameterType="String">
+		<![CDATA[
+			select count(*) from qna where write_id=#{writeId}
+		]]>
+	</select>
+	
+	
+	<!-- 관리자용: QNA 리스트 전체 가져오기 -->
+	<select id="getAllQnaList" resultType="qna" parameterType="hashmap">
+		<![CDATA[
+			select * from 
+			    (select rownum rnum ,qa.* from
+			        (select qna_no qnaNo, qna_sort qnaSort, write_id writeId, qna_title qnaTitle,
+			        to_char(write_date, 'yyyy-MM-dd') writeDate, answer_content answerContent from qna order by qnaNo desc) qa 
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum} 
+		]]>
+	</select>
+	
+	<!-- QNA 리스트 가져오기 -->
+	<select id="getQnaList" resultType="qna" parameterType="hashmap">
+		<![CDATA[
+			select * from 
+			    (select rownum rnum ,qa.* from
+			        (select qna_no qnaNo, qna_sort qnaSort, write_id writeId, qna_title qnaTitle,
+			        to_char(write_date, 'yyyy-MM-dd') writeDate, answer_content answerContent from qna where write_id=#{writeId} order by qnaNo desc) qa 
+				where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum} 
+		]]>
+	</select>
+	
+	
+	<!-- 관리자용: QNA 뷰화면 -->
+	<select id="getAdminQnaView" resultType="qna" parameterType="int">
+		<![CDATA[
+			select qna_no qnaNo, qna_sort qnaSort, qna_title qnaTitle, write_date writeDate, write_id writeId, answer_content answerContent,
+			qna_content qnaContent, answer_date answerDate, qna_img qnaImg from qna where qna_no=#{qnaNo}
+		]]>
+	</select>
+	
+	<!-- QNA 뷰화면 -->
+	<select id="getQnaView" resultType="qna" parameterType="hashmap">
+		<![CDATA[
+			select qna_no qnaNo, qna_sort qnaSort, qna_title qnaTitle, write_date writeDate, write_id writeId, answer_content answerContent,
+			qna_content qnaContent, answer_date answerDate, qna_img qnaImg from qna where qna_no=#{qnaNo} and write_id=#{writeId}
+		]]>
+	</select>
+	
+	
+	<!-- QNA 글쓰기 -->
+	<insert id="insertQna" parameterType="qna">
+		<!-- <selectKey keyProperty="qnaNo" resultType="int" order="BEFORE">
+			<![CDATA[
+				select qna_no.nextval from dual
+			]]>
+		</selectKey>
+		 -->
+		<![CDATA[
+			insert into qna(qna_no, qna_division, qna_sort, write_id, qna_title, qna_content, qna_img, write_date)
+			values(qna_no_seq.nextval, #{qnaDivision}, #{qnaSort},#{writeId},#{qnaTitle},#{qnaContent},#{qnaImg, jdbcType=VARCHAR},sysdate)
+		]]>
+	</insert>
+	
+	<!-- QNA 글수정 -->
+	<update id="updateQna" parameterType="qna">
+		<![CDATA[
+			update qna set qna_title=#{qnaTitle}, qna_content=#{qnaContent}, qna_img=#{qnaImg, jdbcType=VARCHAR} where qna_no=#{qnaNo} and write_id=#{writeId}
+		]]>
+	</update>
+	
+	
+	<!-- QNA 글삭제 -->
+	<delete id="deleteQna" parameterType="qna">
+		<![CDATA[
+			delete from qna where qna_no=#{qnaNo} and write_id=#{writeId}
+		]]>
+	</delete>
+	
+	
+	<!-- QNA 답변 여부 확인 -->
+	<select id="checkAnswer" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select count(answer_content)answerContent from qna where qna_no=#{qnaNo} and write_id=#{writeId}
+		]]>
+	</select>
+	
+	
+	<!-- 관리자용: QNA 답변 쓰기(null>답변내용으로 update -->
+	<update id="updateAnswer" parameterType="qna">
+		<![CDATA[
+			update qna set answer_content=#{answerContent}, answer_date=sysdate where qna_no=#{qnaNo}
+		]]>
+	</update>
+	
+	
+	
+	<!-- 주리 -->
+	<select id="getCountQnaList" parameterType="adMQnaInfo" resultType="int" >
+		<![CDATA[
+			    select count(*) from
+			      (select qna_no qnaNo, qna_division qnaDivision,
+			              qna_sort qnaSort,  write_id writeId, 
+			              qna_title qnaTitle, qna_content qnaContent,
+			              qna_img qnaImg, to_char(write_date, 'yyyyMMdd') writeDate, 
+			              answer_content answerContent, to_char(answer_date, 'yyyyMMdd') answerDate
+			      from qna where write_id=#{writeId} and qna_division=#{qnaDivision} )
+			    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getQnaAllList" parameterType="adMQnaInfo" resultType="qna" >
+		<![CDATA[
+			select * 
+			from 
+			  (select rownum rnum ,qa.* 
+			  from
+			    (select * from
+			  
+			      (select qna_no qnaNo, qna_division qnaDivision,
+			              qna_sort qnaSort,  write_id writeId, 
+			              qna_title qnaTitle, qna_content qnaContent,
+			              qna_img qnaImg, to_char(write_date, 'yyyyMMdd') writeDate, 
+			              answer_content answerContent, to_char(answer_date, 'yyyyMMdd') answerDate
+			      from qna where write_id=#{writeId} and qna_division=#{qnaDivision} )
+			    ${sqlText} order by ${colName} ${sortType}) qa 
+			  where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>	
+	
+	<select id="getMemberTotalQnaS1" parameterType="string" resultType="hashmap">
+		select answer_content answerContent, count(*) count from qna where write_id=#{writeId} group by answer_content having answer_content is null
+	</select>
+	
+	<select id="getMemberTotalQnaS2" parameterType="string" resultType="hashmap">
+		select answer_content answerContent, count(*) count from qna where write_id=#{writeId} group by answer_content having answer_content is not null
+	</select>
+	
+	
+	
+	<select id="getCountTotalQnaList" parameterType="adMQnaInfo" resultType="int" >
+		<![CDATA[
+			    select count(*) from
+			      (select qna_no qnaNo, qna_division qnaDivision,
+			              qna_sort qnaSort,  write_id writeId, 
+			              qna_title qnaTitle, qna_content qnaContent,
+			              qna_img qnaImg, to_char(write_date, 'yyyyMMdd') writeDate, 
+			              answer_content answerContent, to_char(answer_date, 'yyyyMMdd') answerDate
+			      from qna  )
+			    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getTotalQnaAllList" parameterType="adMQnaInfo" resultType="qna" >
+		<![CDATA[
+			select * 
+			from 
+			  (select rownum rnum ,qa.* 
+			  from
+			    (select * from
+			  
+			      (select qna_no qnaNo, qna_division qnaDivision,
+			              qna_sort qnaSort,  write_id writeId, 
+			              qna_title qnaTitle, qna_content qnaContent,
+			              qna_img qnaImg, to_char(write_date, 'yyyyMMdd') writeDate, 
+			              answer_content answerContent, to_char(answer_date, 'yyyyMMdd') answerDate
+			      from qna )
+			    ${sqlText} order by ${colName} ${sortType}) qa 
+			  where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>	
+	
+	<select id="getMemberTotalQnaS3" resultType="hashmap">
+		select answer_content answerContent, count(*) count from qna group by answer_content having answer_content is null
+	</select>
+	
+	<select id="getMemberTotalQnaS4" resultType="hashmap">
+		select answer_content answerContent, count(*) count from qna group by answer_content having answer_content is not null
+	</select>
+	
+</mapper>
+

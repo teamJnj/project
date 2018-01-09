@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="marketMapper">
+	
+	<!-- 프리마켓 ㅋ -->
+	
+
+	
+	<select id="getMarketCount" resultType="int">
+		<![CDATA[
+			select count(market_no) from market 
+		]]>
+	</select>
+	<select id="getAllMarket" resultType="market">
+		select market_no marketNo, market_title marketTitle, 
+		market_content marketContent,market_addr marketAddr, 
+		to_char(market_date,'yyyy-MM-dd') marketDate, 
+		to_char(apply_end_date,'yyyy-MM-dd') applyEndDate,
+		booth_price boothPrice, apply_people applyPeople, 
+		to_char(write_date,'yyyy-MM-dd') writeDate, hits,
+		market_state marketState from market order by 1 desc
+	</select>
+	
+	<select id="getAllPageMarket" parameterType="hashmap" resultType="market">
+		<![CDATA[
+		select * from
+			(select rownum runm, m.* from
+				(select market_no marketNo, market_title marketTitle, 
+				market_content marketContent,market_addr marketAddr, 
+				to_char(market_date,'yyyy-MM-dd') marketDate, 
+				to_char(apply_end_date,'yyyy-MM-dd') applyEndDate,
+				booth_price boothPrice, apply_people applyPeople, 
+				to_char(write_date,'yyyy-MM-dd') writeDate, hits,
+				market_state marketState from market order by marketNo desc) m 
+		where rownum<=#{endArticleNum}) where runm>=#{startArticleNum} 
+		]]>
+	</select>
+
+
+	<select id="getSortAllMarket">
+		select market_no marketNo, market_title marketTitle, 
+		market_content marketContent,market_addr marketAddr, 
+		to_char(market_date,'yyyy-MM-dd') marketDate, 
+		to_char(apply_end_date,'yyyy-MM-dd') applyEndDate,
+		booth_price boothPrice, apply_people applyPeople, 
+		to_char(write_date,'yyyy-MM-dd') writeDate, hits,
+		market_state marketState from market 
+		where market_addr like #{search} order by market_no
+	</select>
+	
+	<select id="getMarket" resultType="market" parameterType="int">
+		select market_no marketNo, market_title marketTitle, 
+		market_content marketContent,market_addr marketAddr, 
+		to_char(market_date,'yyyy-MM-dd') marketDate, 
+		to_char(apply_end_date,'yyyy-MM-dd') applyEndDate,
+		booth_price boothPrice, apply_people applyPeople, 
+		to_char(write_date,'yyyy-MM-dd') writeDate, hits,
+		market_state marketState from market where market_no=#{market_no}
+	</select>
+	
+	<delete id="deleteMarket" parameterType="int">
+		delete from market where market_no=#{marketNo}
+	</delete>
+
+	<insert id="insertMarket" parameterType="market">
+		insert into market values(
+		market_no_seq.nextval,#{marketTitle} , #{marketContent}, '인천 남구 학익동 663-1 태승빌딩 5층',
+		#{marketDate}, #{applyEndDate},
+		#{boothPrice}, 0, sysdate,
+		0,1)
+	</insert>
+	
+	<update id="updateMarket" parameterType="market">
+		update market set
+		market_title = #{marketTitle}, 
+		market_content = #{marketContent}, 
+		market_date = #{marketDate},
+		apply_end_date = #{applyEndDate},
+		booth_price = #{boothPrice} 
+		where market_no = #{marketNo}
+	</update>
+
+	<!-- 4.글의 조회수 증가 -->
+	<select id="increasehits" parameterType="int">
+		update market set hits = hits+1 where market_no = #{marketNo}
+	</select>
+	<!-- 댓글 수 증가 -->
+	<select id="marketCommentCount" resultType="int" parameterType="int">
+		select count(*) from market_comment where market_no=#{marketNo}
+	</select>
+	<!-- 프리마켓 댓글 -->
+	<select id="getMarketCommentCount" resultType="int">
+		<![CDATA[
+			select count(*) from market_comment
+		]]>
+	</select>
+	<select id="getAllMarketComment" resultType="marketComment">
+		select market_comment_no marketCommentNo, market_no marketNo, write_id writeID,
+		comment_content commentContent, write_date writeDate, report_cnt reportCnt
+		from market_comment
+	</select>
+	
+
+	<select id="getAllPageMarketComment" parameterType="hashmap" resultType="marketComment">
+		<![CDATA[
+		select * from
+			(select rownum runm, m.* from
+				(select market_comment_no marketCommentNo, market_no marketNo, write_id writeID,
+		comment_content commentContent, write_date writeDate, report_cnt reportCnt from market_comment) m
+		where rownum<=#{endArticleNum}) where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<delete id="deleteAllMarketComment" parameterType="int">
+		delete from market_comment where market_no=#{marketNo}
+	</delete>
+	
+	<select id="getMarketComment" resultType="marketComment" parameterType="int">
+		select market_comment_no marketCommentNo, market_no marketNo,
+			write_id  writeId, comment_content commentContent, 
+			to_char(write_date,'yyyy-MM-dd') writeDate, report_cnt reportCnt
+		 from market_comment where market_no=#{marketNo} order by marketCommentNo 
+	</select>
+
+	<insert id="insertMarketComment" parameterType="marketComment">
+		insert into market_comment values(
+		market_comment_no_seq.nextval, #{marketNo}, #{writeId}, #{commentContent},
+		sysdate, 0)
+	</insert>
+	 
+	<!-- 5.글의 댓글수 증가 -->
+	<update id="increaseReplyCnt" parameterType="int">
+		update market_comment set market_comment_no = market_comment_no+1 where market_no = #{marketNo}
+	</update>
+	<select id="readReply" parameterType="int" resultType="marketComment">
+		select market_comment_no marketCommentNo, market_no marketNo,
+			write_id  writeId, comment_content commentContent, 
+			to_char(write_date,'yyyy-MM-dd') writeDate, report_cnt reportCnt from market_comment where market_no=#{marketNo}
+	</select>
+	
+	<select id="listRecentReply" parameterType="int" resultType="marketComment">
+	<![CDATA[
+		select market_comment_no marketCommentNo, market_no marketNo,
+			write_id  writeId, comment_content commentContent, 
+			to_char(write_date,'yyyy-MM-dd') writeDate, report_cnt reportCnt from 
+			(select market_comment_no marketCommentNo, market_no marketNo,
+			write_id  writeId, comment_content commentContent, 
+			to_char(write_date,'yyyy-MM-dd') writeDate, report_cnt reportCnt from market_comment where market_no = #{marketNo} order by market_comment_no desc) 
+		where rownum<=3
+	]]>
+	</select>
+
+	<update id="updateMarketComment" parameterType="marketComment">
+		update market_comment set
+		comment_content = #{commentContent},
+		write_date = sysdate
+		where market_comment_no = #{marketCommentNo} 
+	</update>
+	
+	<delete id="deleteMarketComment" parameterType="hashmap">
+		delete from market_comment where market_no=#{marketNo} and
+		market_comment_no=#{marketCommentNo}
+	</delete>
+	<!-- 프리마켓 신청하고, 신청취소 시 댓글 삭제하기 -->
+	<delete id="deleteMarketCommentApply" parameterType="hashmap">
+		delete from market_comment where market_no=#{marketNo} and
+		write_id=#{writeId}
+	</delete>
+
+
+
+	<!-- 프리마켓 신청 테이블 -->
+	<select id="marketPay" resultType="marketApply" parameterType="hashmap">
+		select market_no marketNo, member_id memberId, apply_tel applyTel,
+		apply_date applyDate, booth_num boothNum, pay_money payMoney, pay_way payWay,
+		depositor, market_apply_state marketApplyState from market_apply 
+		where market_no=#{marketNo} and member_id=#{memberId}
+	</select>
+	<select id="getAllMarketApply" resultType="marketApply">
+		select market_no marketNo, member_id memberId, apply_tel applyTel,
+		apply_date applyDate, booth_num boothNum, pay_money payMoney, pay_way payWay,
+		depositor, market_apply_state marketApplyState from market_apply
+	</select>
+	
+	<select id="getMarketApplyList" parameterType="int" resultType="marketApply">
+		select market_no marketNo, member_id memberId, apply_tel applyTel,
+		apply_date applyDate, booth_num boothNum, pay_money payMoney, pay_way payWay,
+		depositor, market_apply_state marketApplyState from market_apply where market_no=#{marketNo}
+	</select>
+	
+	<select id="getAllPageMarketApply" resultType="marketApply" parameterType="hashmap" >
+		<![CDATA[
+		select * from
+			(select rownum runm, m.* from
+				(select market_no marketNo, member_id memberId, apply_tel applyTel,
+				apply_date applyDate, booth_num boothNum, pay_money payMoney, pay_way payWay,
+				depositor, market_apply_state marketApplyState from market_apply) m 
+				where rownum<=#{endArticleNum}) where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- 프리마켓 신청수  증가 -->
+	<select id="increaseApplyPeople" parameterType="marketApply">
+		update market set apply_people = apply_people+#{boothNum} where market_no = #{marketNo}
+	</select>
+	<!-- 프리마켓 신청수  감소 -->
+	<select id="decreaseApplyPeople" parameterType="marketApply">
+		update market set apply_people = apply_people-(select booth_num from market_apply where member_id=#{memberId} and market_no=#{marketNo}) where market_no = #{marketNo}
+	</select>
+
+	<insert id="insertMarketApply" parameterType="marketApply" >
+		insert into market_apply values(
+		#{marketNo}, #{memberId}, #{applyTel}, sysdate,
+		#{boothNum}, #{boothNum}*(select booth_price from market where market_no=#{marketNo}), #{payWay}, #{depositor}, 1)
+	</insert>
+	
+	<delete id="deleteMarketApply" parameterType="hashmap">
+		delete from market_apply where market_no=#{marketNo} and member_id=#{memberId}
+	</delete>
+	
+	
+	<select id="getBoothNum" parameterType="hashmap" resultType="int">
+		select booth_num from market_apply where member_id=#{memberId} and market_no=#{marketNo}
+	</select>
+	
+	<delete id="deleteAllMarketApply" parameterType="int">
+		delete from market_apply where market_no=#{marketNo} 
+		
+	</delete>
+	
+	
+	<!-- 수현 -->
+	<!-- 일반회원 프리마켓 리스트 -->
+	<select resultType="hashmap" parameterType="hashmap" id="getMemberMarketList">
+		<![CDATA[ 
+			select * from (select rownum runm, m.* from 
+			(select m.market_no marketNo, market_title marketTitle, 
+			to_char(market_date,'yyyy-MM-dd') marketDate, apply_people applyPeaple, 
+			booth_num boothNum, pay_money payMoney, market_apply_state marketApplyState 
+			from market m, market_apply ma 
+			where m.market_no=ma.market_no and member_id=#{memberId} order by marketNo desc) 
+			m where rownum<=#{endArticleNum}) where runm>=#{startArticleNum} 
+		]]>
+	</select>
+	<!-- 일반회원 프리마켓 리스트 개수 -->
+	<select resultType="int" parameterType="string" id="getgetMemberMarketCnt">
+		<![CDATA[ 
+			select count(*) from market_apply where member_id=#{memberId} 
+		]]>
+	</select>
+	
+	
+	<!-- 탈퇴를 위한 프리마켓 참가 취소 -->
+	<delete id="deleteMarketApplyForResign" parameterType="string">
+		<![CDATA[ 
+			delete from market_apply where member_id=#{memberId} 
+		]]>
+	</delete>
+	
+	
+	
+	
+	<!-- =============================================================================================== -->
+	<!-- 박주리 모음 -->
+	<select id="getAdminCountMemberMarketList" parameterType="adMMarketInfo" resultType="int">
+		<![CDATA[ 
+			select count(*) from
+		      (select a.market_no marketNo, m.market_title marketTitle, 
+		              to_char(m.market_date, 'yyyyMMdd') marketDate, a.booth_num boothNum, 
+		              a.pay_money payMoney, to_char(a.apply_date, 'yyyyMMdd') applyDate, 
+		              a.market_apply_state marketApplyState,
+              		  a.member_id memberId
+		      from market_apply a, market m 
+		      where member_id=#{memberId} and a.market_no=m.market_no)
+		    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+
+	<select id="getAdminMemberMarketList" parameterType="adMMarketInfo" resultType="adMMarketRecord">
+			<![CDATA[
+				select * from 
+				  (select rownum rnum, list.* from
+				    (select * from
+				      (select a.market_no marketNo, m.market_title marketTitle, 
+				              to_char(m.market_date, 'yyyyMMdd') marketDate, a.booth_num boothNum, 
+				              a.pay_money payMoney, to_char(a.apply_date, 'yyyyMMdd') applyDate, 
+				              a.market_apply_state marketApplyState,
+	              			  a.member_id memberId
+				      from market_apply a, market m 
+				      where member_id=#{memberId} and a.market_no=m.market_no)
+				    ${sqlText} order by ${colName} ${sortType})list 
+				  where rownum<=#{endArticleNum})
+				where rnum >=#{startArticleNum}
+			]]>
+	</select>
+	
+	<select id="getMemberTotalMarketApplyState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select market_apply_state marketApplyState, count(*) count from market_apply where member_id=#{memberId} group by market_apply_state
+		]]>
+	</select>
+	
+	<update id="updateMarketApplyPeople" parameterType="hashmap">
+		<![CDATA[
+			update market set apply_people=apply_people${num} where market_no=#{marketNo}
+		]]>
+	</update>
+	
+	
+	<update id="updateMarketApply" parameterType="hashmap">
+		<![CDATA[
+				update market_apply set market_apply_state=#{marketApplyState} where market_no=#{marketNo} and member_id=#{memberId}
+		]]>
+	</update>
+	
+	
+	<!-- 봉사 댓글( 검색, 필터 추가 ) -->
+	<select id="getCountMemberMarketCommentList" parameterType="adMMarketCommentInfo" resultType="int">
+		<![CDATA[
+		select count(*) 
+		from  
+			(select m.market_no marketNo, m.market_title marketTitle, 
+					c.market_COMMENT_NO marketCommentNo, 
+					c.WRITE_ID writeId, c.COMMENT_CONTENT commentContent, 
+					to_char(c.write_date, 'yyyyMMdd') writeDate, c.report_cnt reportCnt
+			from
+				(select * from market_comment where write_id=#{writeId})c, market m
+			    where c.market_no=m.market_no)
+			${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getMemberMarketCommentList" parameterType="adMMarketCommentInfo" resultType="marketComment">
+		<![CDATA[
+		        select * from 
+			        (select rownum rnum, list.* from
+			            (  select * 
+			                from  
+			                    (select m.market_no marketNo, m.market_title marketTitle, 
+			                        c.market_COMMENT_NO marketCommentNo, 
+			                        c.WRITE_ID writeId, c.COMMENT_CONTENT commentContent, 
+			                        to_char(c.write_date, 'yyyyMMdd') writeDate, c.report_cnt reportCnt
+			                    from
+			                        (select * from market_comment where write_id=#{writeId})c, market m
+			                    where c.market_no=m.market_no)
+			                    ${sqlText} order by ${colName} ${sortType}) list
+			                where rownum<=#{endArticleNum}) 
+			      where rnum >=#{startArticleNum}
+			]]>
+	</select>
+	
+	
+	
+	
+	<select id="getCountTotalMarketList" parameterType="adMarketInfo" resultType="int">
+		<![CDATA[
+				    select count(*) from
+				      (select 
+                      market_no marketNo, 
+                      market_title marketTitle,
+                      market_content marketContent,
+                      market_addr marketAddr,
+                      to_char(market_date,'yyyyMMdd') marketDate,
+                      to_char(apply_end_date, 'yyyyMMdd') applyEndDate,
+                      booth_price boothPrice,
+                      apply_people applyPeople,
+                      to_char(write_date, 'yyyyMMdd') writeDate,
+                      hits,
+                      market_state marketState
+				      from market)
+				    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getTotalMarketList" parameterType="adMarketInfo" resultType="market">
+		<![CDATA[
+			select * from 
+				  (select rownum rnum, list.* from
+				    (select * from
+				      (select 
+                      market_no marketNo, 
+                      market_title marketTitle,
+                      market_content marketContent,
+                      market_addr marketAddr,
+                      to_char(market_date,'yyyyMMdd') marketDate,
+                      to_char(apply_end_date, 'yyyyMMdd') applyEndDate,
+                      booth_price boothPrice,
+                      apply_people applyPeople,
+                      to_char(write_date, 'yyyyMMdd') writeDate,
+                      hits,
+                      market_state marketState
+				      from market)
+				    ${sqlText} order by ${colName} ${sortType})list 
+				  where rownum<=#{endArticleNum})
+				where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getTotalMarketApplyState" resultType="hashmap">
+		<![CDATA[
+			select market_state marketState, count(*) count from market group by market_state
+		]]>
+	</select>
+	
+	
+	<select id="getCountTotalMarketApplyList" parameterType="adMarketApplyInfo" resultType="int">
+		<![CDATA[
+				    select count(*) from
+				      (select
+						    a.market_no marketNo,
+						    a.member_id memberId,
+						    a.apply_tel applyTel,
+						    to_char(a.apply_date, 'yyyyMMdd') applyDate,
+						    a.booth_num boothNum,
+						    a.pay_way payWay,
+						    a.pay_money payMoney,
+						    a.depositor depositor,
+						    a.market_apply_state marketApplyState,
+						    m.market_title marketTitle, 
+						    to_char(m.market_date, 'yyyyMMdd') marketDate 
+						from market m, market_apply a 
+						where m.market_no=a.market_no 
+						order by m.market_no)
+				    ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getTotalMarketApplyList" parameterType="adMarketApplyInfo" resultType="marketApply">
+		<![CDATA[
+			select * from 
+				  (select rownum rnum, list.* from
+				    (select * from
+				      (select
+						    a.market_no marketNo,
+						    a.member_id memberId,
+						    a.apply_tel applyTel,
+						    to_char(a.apply_date, 'yyyyMMdd')  applyDate,
+						    a.booth_num boothNum,
+						    a.pay_way payWay,
+						    a.pay_money payMoney,
+						    a.depositor depositor,
+						    a.market_apply_state marketApplyState,
+						    m.market_title marketTitle, 
+						    to_char(m.market_date, 'yyyyMMdd') marketDate 
+						from market m, market_apply a 
+						where m.market_no=a.market_no 
+						order by m.market_no)
+				    ${sqlText} order by ${colName} ${sortType})list 
+				  where rownum<=#{endArticleNum})
+				where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getMarketApplyState" resultType="hashmap">
+		<![CDATA[
+			select market_apply_state marketStateApply, count(*) count from market_apply group by market_apply_state
+		]]>
+	</select>
+	
+</mapper>
+

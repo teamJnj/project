@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="adoptMapper">
+
+	<!-- 수안============ -->
+	<!-- 입양 글갯수 다 가져오기=펫마리수 -->
+	<select id="getAdoptCount" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select count(*) from 
+				(select p.pet_no petNo, p.kind kind, p.gender gender, c.center_name centerName, p.pet_state petState,
+        
+		        to_char((to_date(to_char(p.mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd'))))mercyDate, 
+		        i.pet_img petImg
+		        
+		        from pet p, center c, pet_img i 
+		        
+		        where p.pet_no=i.pet_no and p.center_id=c.center_id and pet_state<>0 
+		        and i.pet_img_no=1 and p.pet_state like ${petState} and p.pet_sort like ${petSort} and RTRIM(substr(c.center_addr, 0,(instr(c.center_addr,' ')))) like ${firstAddr}
+				and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>-3
+				
+		        order by p.mercy_date asc)
+		]]>
+	</select>
+	
+	<!-- 입양 리스트 -->
+	<select id="getAdoptList" resultType="sponsorDomain" parameterType="hashmap">
+		<![CDATA[
+		 select * from 
+    		(select rownum rnum, list.* from( 
+        		select p.pet_name petName, p.pet_no petNo, p.kind kind, p.gender gender, c.center_name centerName, p.pet_state petState,
+        
+		        to_char((to_date(to_char(p.mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd'))))mercyDate, 
+		        i.pet_img petImg
+		        
+		        from pet p, center c, pet_img i 
+		        
+		        where p.pet_no=i.pet_no and p.center_id=c.center_id and pet_state<>0 
+		        and i.pet_img_no=1 and p.pet_state like ${petState} and p.pet_sort like ${petSort} and RTRIM(substr(c.center_addr, 0,(instr(c.center_addr,' ')))) like ${firstAddr}
+				and (to_date(to_char(mercy_date,'yyyyMMdd'))-to_date(to_char(sysdate,'yyyyMMdd')))>-3
+				
+		        order by p.pet_state,p.mercy_date asc)list 
+			where rownum<=#{endArticleNum}) 
+		where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	
+	<!-- 입양 뷰뿌리기 글 -->
+	<select id="getAdoptView" resultType="sponsorDomain" parameterType="int">
+		<![CDATA[
+			select p.pet_no petNo, p.neutral neutral, p.pet_state petState, p.pet_name petName, p.pet_sort petSort, 
+			c.center_name centerName, p.kind kind, p.gender gender, p.age age, p.weight weight, p.disease disease, 
+			to_char(p.mercy_date, 'yyyy-MM-dd') mercyDate, c.center_addr centerAddr, c.center_tel centerTel, c.email centerEmail, p.feature feature 
+			from pet p, center c
+			where p.center_id=c.center_id and p.pet_no=#{petNo}
+		]]>
+	</select>
+	<select id="cancleCountForView" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select count(cancle)cancle from adopt where pet_no=#{petNo} and member_id=#{memberId}
+		]]>
+	</select>
+	
+	<select id="cancleInfoForView" resultType="boolean" parameterType="hashmap">
+		<![CDATA[
+			select a.cancle cancle from adopt a, pet p 
+			where a.pet_no=p.pet_no and p.pet_no=#{petNo} and a.member_id=#{memberId} 
+			and a.adopt_no=(select nvl(max(a.adopt_no),0) adoptNo from adopt a, pet p where a.pet_no=p.pet_no and p.pet_no=#{petNo} and a.member_id=#{memberId})
+		]]>
+	</select>
+
+	<select id="lastAdoptMember" resultType="String" parameterType="int">
+		<![CDATA[
+			select member_id memberId from adopt where pet_no=#{petNo} and cancle=0
+		]]>
+	</select>
+	
+	
+	<!-- 입양 뷰사진 뿌리기 -->
+	<select id="getAdoptViewPicture" resultType="petImg" parameterType="int">
+		<![CDATA[
+			select pet_no petNo, pet_img_no petImgNo, pet_img petImg from pet_img where pet_no=#{petNo}
+		]]>
+	</select>
+	
+	
+	<!-- 입양번호 : 입양신청할때마다 늘어나게 해야함 -->
+	<select id="selectAdoptNumber" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select count(*) from adopt where pet_no=#{petNo} and member_id=#{memberId}
+		]]>
+	</select>
+	
+	<select id="increaseAdoptNo" resultType="int" parameterType="hashmap">
+		<![CDATA[
+			select nvl(max(adopt_no)+1,1) from adopt where pet_no=#{petNo} and member_id=#{memberId}
+		]]>
+	</select>
+	
+	
+	<insert id="insertAdoptInfo" parameterType="adopt">
+		<![CDATA[
+			insert into adopt values(#{petNo},#{memberId},#{adoptNo},#{adoptTel},sysdate,null,0,null)
+		]]>
+	</insert>
+	
+	<update id="updatePetState" parameterType="pet">
+		<![CDATA[
+			update pet set pet_state=#{petState} where pet_no=#{petNo}
+		]]>
+	</update>	
+	
+	<update id="updateAdoptInfo" parameterType="adopt">
+		<![CDATA[
+			update adopt set cancle=1, cancle_date=sysdate where pet_no=#{petNo} and member_id=#{memberId}
+		]]>
+	</update>
+	
+	
+	<!-- 입양 신청중인 아이들 D-day조정 -->
+	<update id="updatePlusMercyDate" parameterType="int">
+	<![CDATA[
+		update pet set mercy_date=to_char(to_date(mercy_date, 'rr/MM/dd') + 15) where pet_no=#{petNo}
+	]]>
+	</update>
+	<update id="updateMinusMercyDate" parameterType="int">
+	<![CDATA[
+		update pet set mercy_date=to_char(to_date(mercy_date, 'rr/MM/dd') - 15) where pet_no=#{petNo}
+	]]>
+	</update>
+	
+	
+	
+<!-- 혜미혜미혜미혜미혜미혬 -->
+<!-- 마이페이지 입양내역 ㅇ3ㅇ -->
+<select id="getMypageMemberAdopt" parameterType="hashmap" resultType="hashmap">
+   <![CDATA[
+  select h2.* from
+(select rownum rnum, h.* from
+(select temp.*, c.center_name centerName from 
+(select p.pet_state petState, p.pet_no petNo, a.member_id memberId, p.center_id centerId, p.pet_name petName, to_char(a.adopt_Apply_date,'yyyy-MM-dd') adoptApplyDate, cancle from pet p, adopt a where p.pet_no=a.pet_no) temp, center c
+where centerId=center_id and memberId=#{memberId}) h where rownum<=#{endArticleNum})h2
+where rnum>=#{startArticleNum}
+   ]]>
+</select>
+<!-- 마이페이지 입양 내역 글 가져오는데 조건을 달아 ㅇ3ㅇ -->
+<select id="getMypageMemberAdoptCount" resultType="int" parameterType="String">
+		<![CDATA[
+			select count(*) from pet p, member_sponsor_record m where m.pet_no=p.pet_no and m.member_id=#{memberId}
+		]]>
+</select>
+
+
+	<!-- 주리입니당 -->
+	<!-- 해당 회원의 필터, 검색 별 입양 내역의 총 개수 -->
+	<select id="getCountMemberAdoptList" parameterType="adMAdoptInfo" resultType="int">
+		<![CDATA[ 
+			select count(*) from      
+				(select a.pet_no petNo, a.member_id memberId, 
+			            a.adopt_no adoptNo, a.adopt_tel adoptTel, 
+			            to_char(a.adopt_apply_date, 'yyyyMMdd') adoptApplyDate,  to_char(a.adopt_date,'yyyyMMdd') adoptDate,
+			            a.cancle cancle, to_char(a.cancle_date, 'yyyyMMdd') cancleDate, 
+			            c.center_name centerName, 
+			            p.pet_name petName, p.pet_state petState, p.pet_sort petSort
+			from 
+			     (select * from adopt where member_id=#{memberId})a, center c, pet p 
+			      where a.pet_no=p.pet_no and p.center_id=c.center_id)
+			${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<!-- 해당 회원의 입양 내역 리스트( 센터명, 분류, 이름, 상태, 날짜 ) / 필터, 검색 -->
+	<select id="getMemberAdoptList" parameterType="adMAdoptInfo" resultType="adMAdoptRecord">
+		<![CDATA[
+			select * from       
+			    (select rownum rnum, list.* from
+			        (select * from      
+			            (select a.pet_no petNo, a.member_id memberId, 
+			                   a.adopt_no adoptNo, a.adopt_tel adoptTel, 
+			                   to_char(a.adopt_apply_date, 'yyyyMMdd') adoptApplyDate,  to_char(a.adopt_date,'yyyyMMdd') adoptDate,
+			                   a.cancle cancle, to_char(a.cancle_date, 'yyyyMMdd') cancleDate, 
+			                   c.center_name centerName, 
+			                   p.pet_name petName, p.pet_state petState, p.pet_sort petSort
+			            from 
+			                    (select * from adopt where member_id=#{memberId})a, center c, pet p 
+			            where a.pet_no=p.pet_no and p.center_id=c.center_id)
+			        ${sqlText} order by ${colName} ${sortType} )list
+			    where rownum<=#{endArticleNum})
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getCenterAdoptForResign" parameterType="string" resultType="int">
+		<![CDATA[
+			select count(*) from pet where center_id=#{centerId} and pet_state in(2,3)
+		]]>
+	</select>
+	
+	<select id="getMemberAdoptStateCount" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select pet_state petState, count(*) count 
+				from pet p, adopt a 
+				where p.pet_no=a.pet_no and a.member_id=#{memberId} group by pet_state
+		]]>
+	</select>
+	
+	
+	
+	<!-- 센터 동물들 중 입양이 접수, 진행, 완료 인 센터가 볼 입양내역을 가져온다 -->
+	<select id="getCountCenterAdoptApplyList" parameterType="adCAdoptInfo" resultType="int">
+		<![CDATA[
+		             select count(*) from       
+		                 (select 
+		                     p.pet_no petNo, 
+		                     p.pet_name petName, 
+		                     p.pet_sort petSort, 
+		                     p.kind kind, 
+		                     p.gender gender, 
+		                     p.neutral neutral, 
+		                     p.age age, 
+		                     p.weight weight, 
+		                     p.disease disease, 
+		                     p.feature feature, 
+		                     to_char(p.mercy_date, 'yyyyMMdd') mercyDate, 
+		                     to_char(p.write_date, 'yyyyMMdd') writeDate, 
+		                     p.center_id centerId, 
+		                     p.pet_state petState,
+		                     i.pet_img petImg
+		                 from pet p, pet_img i 
+		                 where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId} and pet_state in(2,3,4))
+		             ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	<select id="getCenterAdoptApplyList" parameterType="adCAdoptInfo" resultType="pet">
+		<![CDATA[
+			select * from        
+		         (select rownum rnum ,b.*  from        
+		             (select * from       
+		                 (select 
+		                     p.pet_no petNo, 
+		                     p.pet_name petName, 
+		                     p.pet_sort petSort, 
+		                     p.kind kind, 
+		                     p.gender gender, 
+		                     p.neutral neutral, 
+		                     p.age age, 
+		                     p.weight weight, 
+		                     p.disease disease, 
+		                     p.feature feature, 
+		                     to_char(p.mercy_date, 'yyyyMMdd') mercyDate, 
+		                     to_char(p.write_date, 'yyyyMMdd') writeDate, 
+		                     p.center_id centerId, 
+		                     p.pet_state petState,
+		                     i.pet_img petImg
+		                 from pet p, pet_img i 
+		                 where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId} and pet_state in(2,3,4))
+		             ${sqlText} order by ${colName} ${sortType}) b 	
+		         where rownum<=#{endArticleNum})
+		     where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	<select id="getTotalCenterAdoptPetState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select p.pet_state petState, count(*) count
+			from pet p, pet_img i 
+			where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId} and pet_state in(2,3,4) group by p.pet_state
+		]]>
+	</select>
+	
+	<select id="getAdoptApplyInfo" parameterType="int" resultType="adopt">
+		<![CDATA[
+			select 
+			    a.pet_no petNo, 
+			    a.member_id memberId, 
+			    m.member_name memberName,
+			    a.adopt_no adoptNo, 
+			    a.adopt_tel adoptTel, 
+			    to_char(a.adopt_apply_date, 'yyyyMMdd') adoptApplyDate, 
+			    to_char(a.adopt_date, 'yyyyMMdd') adoptDate, 
+			    a.cancle cancle, 
+			    to_char(a.cancle_date, 'yyyyMMdd') cancleDate 
+			from adopt a, member m where a.member_id=m.member_id and pet_no=#{petNo}
+		]]>
+	</select>
+	
+	
+	<!-- ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ창재님꺼ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ -->
+	<!-- 한 센터의 총 입양 건수 -->
+	<select id="getAdoptNumOfCenter" parameterType="string" resultType="int">
+		select count(*) from adopt, pet where adopt.pet_no=pet.pet_no and center_id=#{centerId}
+	</select>
+	
+	<!-- 한 센터의 입양 리스트 보기 -->
+	<select id="getAdoptListOfCenter" parameterType="hashmap" resultType="adoptPetCutAndImg">
+		<![CDATA[
+			select * 
+			from (select rownum rnum, p.* 
+      		from (select ap.*, MEMBER_NAME memberName 
+      		from (select pp.*, adopt_no adoptNo, adopt.MEMBER_ID memberId, ADOPT_TEL adoptTel, to_char(adopt_apply_date, 'yyyy-MM-dd') adoptApplyDate, to_char(adopt_date, 'yyyy-MM-dd') adoptDate, cancle, to_char(cancle_date, 'yyyy-MM-dd') cancleDate, cancle_date, adopt_date, adopt_apply_date
+     		from (select pet.pet_no petNo, pet_img petImg, pet_name petName, pet_sort petSort, gender, pet_state petState, to_char(mercy_date, 'yyyy-MM-dd') mercyDate 
+			from pet, pet_img 
+			where pet_img.pet_img_no=1 and pet.pet_no=pet_img.pet_no and center_id=#{centerId}) pp, adopt
+    		where adopt.PET_NO=pp.petNo) ap, member
+    		where ap.memberId=member.MEMBER_ID
+     		order by ${sort}) p 
+			where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- [센터]입양 뷰 -->
+	<select id="getAdoptOfCenter" parameterType="hashmap" resultType="adoptPetCutAndImg">
+		<![CDATA[
+			select am.*, pet_name petName, pet_sort petSort, gender, pet_state petState, to_char(mercy_date, 'yyyy-MM-dd') mercyDate, kind, age, weight, disease 
+      		from (select pet_no petNo, adopt.member_id memberId, adopt_no adoptNo, member_name memberName, adopt_tel adoptTel, to_char(adopt_apply_date, 'yyyy-MM-dd') adoptApplyDate, to_char(adopt_date, 'yyyy-MM-dd') adoptDate, cancle, to_char(cancle_date, 'yyyy-MM-dd') cancleDate, to_char(birth_date, 'yyyy-MM-dd') birthDate, email from adopt, member where pet_no=#{petNo} and adopt.member_id=#{memberId} and adopt_no=#{adoptNo} and member.member_id=adopt.member_id) am, pet
+      		where petNo=pet_no
+		]]>
+	</select>
+	
+	<!-- 입양날짜 기록 -->
+	<update id="setAdoptDate" parameterType="hashmap">
+		<![CDATA[
+			update adopt set adopt_date=sysdate where pet_no=#{petNo} and member_id=#{memberId} and adopt_no=#{adoptNo}
+		]]>
+	</update>
+	
+	<!-- 입양취소 (취소상태 변경 및 취소날짜 기록) -->
+	<update id="cancleAdopt" parameterType="hashmap">
+		<![CDATA[
+			update adopt set cancle='1', cancle_date=sysdate where pet_no=#{petNo} and member_id=#{memberId} and adopt_no=#{adoptNo}
+		]]>
+	</update>
+	
+	
+	<!-- 수현 -->
+	<!-- 탈퇴를 위한 입양내역 검색 -->
+	<select id="getMyAdoptForResign" parameterType="string" resultType="int">
+		<![CDATA[
+			select pet_state petState from pet 
+			where pet_no in (select pet_no from adopt where member_id=#{memberId} and cancle=0) 
+			and pet_state!=4
+		]]>
+	</select>
+	
+	
+	
+	
+</mapper>

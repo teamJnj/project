@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="susersMapper">
+
+
+	<select id="getUsers" parameterType="string" resultType="susers">
+		select * from s_users where id=#{id}
+	</select>
+
+	<insert id="insertSUsers" parameterType="susers">
+		insert into s_users values( #{id}, #{password}, #{enabled})
+	</insert>
+	
+	<delete id="deleteSUsers" parameterType="string">
+		delete from s_users where id=#{id}
+	</delete>
+	
+	<update id="updatePassword" parameterType="hashmap">
+		<![CDATA[
+			update s_users set password=#{password} where id=#{id}
+		]]>
+	</update>
+	
+</mapper>

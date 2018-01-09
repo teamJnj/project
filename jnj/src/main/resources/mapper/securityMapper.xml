@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="securityMapper">
+
+	<insert id="insertUser" parameterType="susers">
+		insert into s_users values( #{id}, #{password}, #{enabled} )
+	</insert>
+	
+	<insert id="insertAuthority" parameterType="hashmap">
+		insert into authorities values( #{id}, #{authority} )
+	</insert>
+	
+</mapper>
+
+
+

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="msgMapper">
+
+	<!-- 읽지 않은 받은 글 개수 -->
+	<select id="getReceivedMsgCount" resultType="int" parameterType="string">
+		<![CDATA[
+			select count(*) from message where receiver_id=#{receiverId} and msg_state=1 and msg_delete!=2
+		]]>
+	</select>
+	
+	<!-- 보낸 글 개수 -->
+	<select id="getSendCount" resultType="int" parameterType="string">
+		<![CDATA[
+			select count(*) from message where sender_id=#{senderId} and msg_delete!=1
+		]]>
+	</select>
+	
+	<!-- 보낸 쪽지 리스트 -->
+	<select id="getSendList" resultType="message" parameterType="hashmap">
+		<![CDATA[
+		 select * from 
+    		(select rownum rnum, list.* from( 
+        		select message_no messageNo, title, to_char(send_date, 'yyyy-MM-dd') sendDate, 
+        		receiver_id receiverId, msg_state msgState from message
+        		where sender_id=#{senderId} and msg_delete!=1 order by messageNo desc) list 
+			where rownum<=#{endArticleNum}) 
+		where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- 받은 글 개수 -->
+	<select id="getReceiveCount" resultType="int" parameterType="string">
+		<![CDATA[
+			select count(*) from message where receiver_id=#{receiverId} and msg_delete!=2
+		]]>
+	</select>
+	
+	<!-- 받은 쪽지 리스트 -->
+	<select id="getReceiveList" resultType="message" parameterType="hashmap">
+		<![CDATA[
+		select * from 
+    		(select rownum rnum, list.* from( 
+        		select message_no messageNo, title, to_char(send_date, 'yyyy-MM-dd') sendDate, 
+        		sender_id senderId, msg_state msgState from message
+        		where receiver_id=#{receiverId} and msg_delete!=2 order by messageNo desc) list 
+			where rownum<=#{endArticleNum}) 
+		where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	
+	<!-- 보낸 쪽지 뷰 -->
+	<select id="getSendView" resultType="message" parameterType="hashmap">
+		<![CDATA[
+			select message_no messageNo,title, receiver_id receiverId, content, 
+			to_char(send_date, 'yyyy-MM-dd') sendDate, msg_state msgState from message
+			where message_no=#{messageNo} and sender_id=#{senderId}
+		]]>
+	</select>
+	
+	
+	<!-- 받은 쪽지 뷰 -->
+	<select id="getReceiveView" resultType="message" parameterType="hashmap">
+		<![CDATA[
+			select message_no messageNo, title, sender_id senderId, content, 
+			to_char(send_date, 'yyyy-MM-dd') sendDate, msg_state msgState from message
+			where message_no=#{messageNo} and receiver_id=#{receiverId}
+		]]>
+	</select>
+	
+	<!-- 쪽지 읽음 상태 업데이트 -->
+	<update id="updateMsgRead" parameterType="int">
+		<![CDATA[
+			update message set msg_state=2 where message_no=#{messageNo}
+		]]>
+	</update>
+	
+	<!-- 쪽지 보내기 -->
+	<insert id="insertMessage" parameterType="message">
+		<![CDATA[
+			insert into message 
+			values(message_no_seq.nextval, #{title}, #{content}, sysdate, #{senderId}, #{receiverId}, 1, 0)
+		]]>
+	</insert>
+	
+	<!-- 보낸 쪽지 삭제(상태 업데이트) -->
+	<update id="updateSendDel" parameterType="int">
+		<![CDATA[
+			update message set msg_delete=1 where message_no=#{messageNo}
+		]]>
+	</update>
+	<!-- 받은 쪽지 삭제(상태 업데이트) -->
+	<update id="updateReceiveDel" parameterType="int">
+		<![CDATA[
+			update message set msg_delete=2 where message_no=#{messageNo}
+		]]>
+	</update>
+	<!-- 쪽지 삭제(보낸사람-받은사람 모두 삭제시) -->
+	<delete id="deleteMsg" parameterType="int">
+		<![CDATA[
+			delete from message where message_no=#{messageNo}
+		]]>
+	</delete>
+</mapper>

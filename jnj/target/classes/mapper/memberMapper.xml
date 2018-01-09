@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="memberMapper">
+
+	<select id="getCountMember" resultType="int">
+		select count(*) from member
+	</select>
+
+	<select id="isMember" resultType="int" parameterType="volunteer">
+		select count(*) from member where member_id='${hostId}'
+	</select>
+
+	<select id="getSearchCountMember" resultType="int">
+		select count(*) from member where ${colName} like ${find}
+	</select>
+
+
+	<select id="getAllMember" resultType="member">
+		<![CDATA[
+			select member_id memberId, password, member_name memberName, email, birth_date birthDate, point, grade, report_cnt reportCnt, member_state memberState from member
+		]]>
+	</select>
+	
+	<select id="getAllPageMember" parameterType="hashmap" resultType="member">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select member_id memberId, password, member_name memberName, email, birth_date birthDate, point, grade, report_cnt reportCnt, member_state memberState from member) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getSearchAllPageMember" parameterType="hashmap" resultType="member">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select member_id memberId, password, member_name memberName, email, birth_date birthDate, point, grade, report_cnt reportCnt, member_state memberState from member where ${colName} like ${find}) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	
+	<select id="getMemeber" parameterType="string" resultType="member">
+		<![CDATA[
+			select member_id memberId, password, member_name memberName, email, to_char(birth_date,'yyyyMMdd') birthDate, point, grade, report_cnt reportCnt, member_state memberState from MEMBER where MEMBER_ID=#{memberId}
+		]]>
+	</select>
+
+	<select id="getMemberId" parameterType="hashmap" resultType="string">
+		<![CDATA[
+			select MEMBER_ID from MEMBER where MEMBER_NAME=#{memberName} and EMAIL=#{email}
+		]]>
+	</select>
+	
+	<select id="checkMemberIdAndEmail" parameterType="hashmap" resultType="int">
+		<![CDATA[
+			select count(*) from member where MEMBER_ID=#{memberId} and EMAIL=#{email}
+		]]>
+	</select>
+	
+	<select id="checkExistMemberId" parameterType="string" resultType="int">
+		<![CDATA[
+			select count(*) from member where MEMBER_ID=#{memberId}
+		]]>
+	</select>
+	
+	<select id="checkExistMemberEmail" parameterType="string" resultType="int">
+		<![CDATA[
+			select count(*) from member where EMAIL=#{email}
+		]]>
+	</select>
+	
+	<insert id="insertMember" parameterType="member">
+		<![CDATA[
+			insert into member values( #{memberId}, #{password}, #{memberName}, #{email}, #{birthDate} , #{point}, #{grade}, #{reportCnt}, #{memberState})
+		]]>
+	</insert>
+	
+	<update id="updateMember" parameterType="hashmap">
+		<![CDATA[
+			update member set password=#{password} where member_id=#{memberId}
+		]]>
+	</update>
+	
+	<update id="updateMemberState" parameterType="hashmap">
+		<![CDATA[
+			update member set member_state=#{memberState} where member_id=#{memberId}
+		]]>
+	</update>
+	
+	<delete id="deleteMember" parameterType="string">
+		<![CDATA[
+			delete from member where member_id=#{memberId}
+		]]>
+	</delete>
+
+	<select id="getPassword" parameterType="string" resultType="string">
+		<![CDATA[
+			select password from member where member_id=#{memberId}
+		]]>
+	</select>
+
+	<insert id="insertAuthority" parameterType="hashmap">
+		insert into authorities values (#{id}, #{authority})
+	</insert>
+	
+	<delete id="deleteAuthority" parameterType="string" >
+		delete from authorities where id = #{memberId}
+	</delete>
+	
+	<select id="getMembetStateCount" resultType="hashmap">
+		select member_state memberState,count(*) count from member group by member_state order by member_state asc
+	</select>
+	
+	<!-- 혜미 -->
+	<!-- member_state 상태 가져오기 -->
+	<select id="getMemberState" resultType="int" parameterType="string">
+		<![CDATA[
+			select member_state memberState from member where member_id=#{memberId}
+		]]>
+	</select>
+	
+	
+	<!-- 수안 -->
+	<!-- 멤버 AUTHORITIES 확인하기 -->
+	<select id="getMemberAuthority" resultType="string" parameterType="string">
+		<![CDATA[
+			select authority authority from authorities where id=#{memberId}
+		]]>
+	</select>
+</mapper>
+
+
+

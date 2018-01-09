@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="petMapper">
+	<!-- 센터내 유기동물 총 마리수 -->
+	<select id="getPetNum" parameterType="string" resultType="int">
+		select count(*) from pet where center_id=#{centerId}
+	</select>
+	<!-- 센터내 유기동물 리스트 -->
+	<select id="listPet" parameterType="hashmap" resultType="petCutAndImg">
+		<![CDATA[
+			select * from 
+			(select rownum rnum, p.* from 
+			(select pet.pet_no petNo, pet_img petImg, pet_name petName, pet_sort petSort, gender, pet_state petState, to_char(mercy_date, 'yyyy-MM-dd') mercyDate 
+			from pet, pet_img 
+			where pet_img.pet_img_no=1 and pet.pet_no=pet_img.pet_no and center_id=#{centerId}
+			order by ${sort}) p 
+			where rownum<=#{endArticleNum}) where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- 유기동물 등록 전 seq값 select -->
+	<select id="getPetNoSeq" resultType="int">
+		select pet_no_seq.nextval from dual
+	</select>
+	
+	<!-- 센터회원 유기동물 등록 -->
+	<insert id="insertPet" parameterType="pet">
+		<![CDATA[
+			insert into pet values(#{petNo}, #{petName}, #{petSort}, #{kind}, #{gender}, 
+			#{neutral}, #{age}, #{weight}, #{disease, jdbcType=VARCHAR}, #{feature}, #{mercyDate}, sysdate, 
+			#{centerId}, 1)
+		]]>
+	</insert>
+	<!-- 유기동물 사진 등록 -->
+	<insert id="insertPetImg" parameterType="petImg">
+		<![CDATA[
+			insert into pet_img values(#{petNo}, #{petImgNo}, #{petImg})
+		]]>
+	</insert>
+	
+	<!-- 유기동물 수정 -->
+	<update id="updatePet" parameterType="pet">
+		<![CDATA[
+			update pet set kind=#{kind}, neutral=#{neutral}, weight=#{weight}, disease=#{disease, jdbcType=VARCHAR}, 
+			feature=#{feature}, pet_state=#{petState} where pet_no=#{petNo}
+		]]>
+	</update>
+	
+	<!-- 유기동물 한마리 정보 -->
+	<select id="getPet" parameterType="int" resultType="pet">
+		<![CDATA[
+			select pet_no petNo, pet_name petName, pet_sort petSort, kind, 
+			gender, neutral, age, weight, disease, feature, 
+			to_char(mercy_date, 'yyyy-MM-dd') mercyDate, to_char(write_date, 'yyyy-MM-dd') writeDate, 
+			pet_state petState from pet where pet_no=#{petNo}
+		]]>
+	</select>
+	
+	<!-- 유기동물 상태변경 -->
+	<update id="updateState" parameterType="hashmap">
+		<![CDATA[
+			update pet set pet_state=#{petState} where pet_no=#{petNo}
+		]]>
+	</update>
+	
+	<!-- 안락사날짜 지난 유기동물 상태 안락사 -->
+	<update id="mercyState">
+		<![CDATA[
+			update pet set pet_state=5 where mercy_date<=sysdate and pet_state!=5 and pet_state!=4
+		]]>
+	</update>
+	
+	
+	
+	
+	
+	<!-- 수안================== -->
+	<!-- 펫상태 4,5 돈계산 로직 -->
+	<!-- 펫 리스트 전체 뽑아오기 -->
+	<select id="allPetList" resultType="pet" parameterType="int">
+		<![CDATA[
+			select pet_no petNo, pet_name petName, pet_sort petSort, kind kind, gender gender,
+			neutral neutral, age age, weight weight, disease disease, feature feature, mercy_date mercyDate,
+			write_date writeDate, center_id centerId, pet_state petState from pet where pet_no!=#{petNo} and pet_state not in(0,3,4,5) order by mercy_date asc, pet_no asc
+		]]>
+	</select>
+	
+	<!-- 1.펫한테 들어있는 sponsorMoney 뽑아오기 -->
+	<select id="nowPetMoney" resultType="int" parameterType="int">
+		<![CDATA[
+			select sponsor_money from pet_sponsor where sponsor_no=(select max(sponsor_no) from pet_sponsor where pet_no=#{petNo}) and pet_no=#{petNo}
+		]]>
+	</select>
+	
+	
+	<!-- 2.endPetMoney 다 분배했으면 해당동물 sponsorMoney 0으로 업데이트 -->
+	<update id="updateEndPetMoney" parameterType="int">
+		<![CDATA[
+			update pet_sponsor set sponsor_money=0 where pet_no=#{petNo}
+		]]>
+	</update>
+	
+	<!-- 돈 받는 애의 현재 후원번호 -->
+	<select id="sponNoForReceiver" resultType="int" parameterType="int">
+		<![CDATA[
+			select max(sponsor_no) from pet_sponsor where pet_no=#{petNo}
+		]]>
+	</select>
+	
+	<!-- 돈 받는 애의 현재 후원금액 -->
+	<select id="sponMoneyForReceiver" resultType="int" parameterType="int">
+		<![CDATA[
+			select min(sponsor_money) from pet_sponsor where pet_no=#{petNo}
+		]]>
+	</select>
+	
+	<!-- 돈 계산 해서 1번째 케이스 -->
+	<!-- 3. sponsorNo번째의 sponsorMoney 50으로 세팅 -->
+	<update id="updateThisSponMoney" parameterType="int">
+		<![CDATA[
+			update pet_sponsor set sponsor_money=500000, achieve_date=sysdate where pet_no=#{petNo} and sponsor_no=(select max(sponsor_no) from pet_sponsor where pet_no=#{petNo})
+		]]>
+	</update>
+	<!-- 4. sponsorNo 가 +1되고, sponsorMoney가 0원으로 세팅 -->
+	<insert id="insertThisPetSponsor" parameterType="hashmap">
+		<![CDATA[
+			insert into pet_sponsor values(#{petNo},#{sponsorNo},500000,0,sysdate)
+		]]>
+	</insert>
+	<!-- 5. 지금 선택한 petNo의 mercyDate 가 +15 -->
+	<update id="updateThisMercyDate" parameterType="int">
+		<![CDATA[
+			update pet set mercy_date=to_char(to_date(mercy_date, 'rr/MM/dd') + 15) where pet_no=#{petNo}
+		]]>
+	</update>
+	
+	
+	<!-- 돈 계산 해서 2번째 케이스 -->
+	<!-- 6. petNo의 sponsorMoney를 다시 세팅 -->
+	<update id="updategetAllRestMoney" parameterType="hashmap">
+		<![CDATA[
+			update pet_sponsor set sponsor_money=#{sponsorMoney} where pet_no=#{petNo} and sponsor_no=(select max(sponsor_no) from pet_sponsor where pet_no=#{petNo})
+		]]>
+	</update>
+	
+	<update id="updateCenterAllPetState" parameterType="hashmap">
+		update pet set pet_state=#{petState} where center_id=#{centerId}
+	</update>
+	
+	
+	<!-- 
+	입양시 mercyDate 지움
+	<update id="eraseMercyDate" parameterType="int">
+		<![CDATA[
+			update pet set mercy_date=null where pet_no=#{petNo}
+		]]>
+	</update>
+	 -->
+	
+	<!-- 주리 -->
+	<select id="getCountCenterPetList" parameterType="adCPetInfo" resultType="int">
+		<![CDATA[
+		             select count(*) from       
+		                 (select 
+		                     p.pet_no petNo, 
+		                     p.pet_name petName, 
+		                     p.pet_sort petSort, 
+		                     p.kind kind, 
+		                     p.gender gender, 
+		                     p.neutral neutral, 
+		                     p.age age, 
+		                     p.weight weight, 
+		                     p.disease disease, 
+		                     p.feature feature, 
+		                     to_char(p.mercy_date, 'yyyyMMdd') mercyDate, 
+		                     to_char(p.write_date, 'yyyyMMdd') writeDate, 
+		                     p.center_id centerId, 
+		                     p.pet_state petState,
+		                     i.pet_img petImg
+		                 from pet p, pet_img i 
+		                 where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId})
+		             ${sqlText} order by ${colName} ${sortType}	
+		]]>
+	</select>
+	
+	<select id="getCenterPetList" parameterType="adCPetInfo" resultType="pet">
+		<![CDATA[
+			select * from        
+		         (select rownum rnum ,b.*  from        
+		             (select * from       
+		                 (select 
+		                     p.pet_no petNo, 
+		                     p.pet_name petName, 
+		                     p.pet_sort petSort, 
+		                     p.kind kind, 
+		                     p.gender gender, 
+		                     p.neutral neutral, 
+		                     p.age age, 
+		                     p.weight weight, 
+		                     p.disease disease, 
+		                     p.feature feature, 
+		                     to_char(p.mercy_date, 'yyyyMMdd') mercyDate, 
+		                     to_char(p.write_date, 'yyyyMMdd') writeDate, 
+		                     p.center_id centerId, 
+		                     p.pet_state petState,
+		                     i.pet_img petImg
+		                 from pet p, pet_img i 
+		                 where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId})
+		             ${sqlText} order by ${colName} ${sortType}) b 	
+		         where rownum<=#{endArticleNum})
+		     where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getTotalCenterPetState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select p.pet_state petState, count(*) count
+			from pet p, pet_img i 
+			where p.pet_no=i.pet_no and i.pet_img_no=1 and p.center_id=#{centerId} group by p.pet_state
+		]]>
+	</select>
+	
+</mapper>
+

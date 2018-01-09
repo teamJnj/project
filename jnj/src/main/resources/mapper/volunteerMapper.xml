@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="volunteerMapper">
+
+
+	<!-- 으으으으으으응으  -->
+	<!-- Volunteer테이블  -->
+	
+	
+	
+	<select id="getSearchAllPageVolunteer" parameterType="hashmap" resultType="volunteer">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* 
+				from
+				    (select  volunteer_no volunteerNo,
+			 			 volunteer_division volunteerDivision,
+			 			 volunteer_title volunteerTitle,
+			 			 volunteer_content volunteerContent,
+			 			 volunteer_addr volunteerAddr,
+						  to_char(volunteer_date, 'yyyy-MM-dd') volunteerDate,
+			 			 to_char(apply_end_date, 'yyyy-MM-dd') applyEndDate,
+			 			 age_limit ageLimit,
+			 			 min_people minPeople,
+						  max_people maxPeople,
+			 			 apply_people applyPeople,
+			 			 to_char(write_date, 'yyyy-MM-dd') writeDate,
+						  host_id hostId,
+			 			 host_tel hostTel, 
+						  hits hits,
+						  volunteer_state volunteerState,
+						  report_cnt reportCnt
+						   from volunteer where ${colName} like ${search}) m
+					where rownum<=#{endArticleNum})
+				where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<select id="getSearchCountVolunteer" resultType="int">
+		select count(*) from volunteer where ${colName} like ${search}
+	</select>
+	
+	
+	
+	<!-- 신고수 조회 -->
+	<select id="getReportCnt" parameterType="int" resultType="int">
+		select report_cnt from volunteer where volunteer_no=#{volunteerNo}
+	</select>
+	<!-- 6.글의 신고수 증가 -->
+	<select id="increaseReportCnt" parameterType="int">
+		update volunteer set report_cnt = report_cnt+1 where volunteer_no = #{volunteerNo}
+	</select>
+	<select id="decreaseReportCnt" parameterType="int">
+		update volunteer set report_cnt = 0 where volunteer_no = #{volunteerNo}
+	</select>
+	
+	<select id="getAllVolunteer" resultType="volunteer">
+		<![CDATA[
+			select volunteer_no volunteerNo,
+			  volunteer_division volunteerDivision,
+			  volunteer_title volunteerTitle,
+			  volunteer_content volunteerContent,
+			  volunteer_addr volunteerAddr,
+			  to_char(volunteer_date, 'yyyy-MM-dd') volunteerDate,
+			  to_char(apply_end_date, 'yyyy-MM-dd') applyEndDate,
+			  age_limit ageLimit,
+			  min_people minPeople,
+			  max_people maxPeople,
+			  apply_people applyPeople,
+			  to_char(write_date, 'yyyy-MM-dd') writeDate,
+			  host_id hostId,
+			  host_tel hostTel, 
+			  hits hits,
+			  volunteer_state volunteerState,
+			  report_cnt reportCnt
+			from volunteer 
+			order by volunteerNO
+		]]>
+	</select>
+	
+	<select id="getAllPageVolunteer" parameterType="hashmap" resultType="volunteer">
+      <![CDATA[
+         select * from(
+            select rownum runm, m.* from
+                ( select volunteer_no volunteerNo,
+                    volunteer_division volunteerDivision,
+                    volunteer_title volunteerTitle,
+                    volunteer_content volunteerContent,
+                    volunteer_addr volunteerAddr,
+                    to_char(volunteer_date,'yyyy-mm-dd') volunteerDate,
+                    to_char(apply_end_date, 'yyyy-mm-dd') applyEndDate,
+                    age_limit ageLimit,
+                    min_people minPeople,
+                    max_people maxPeople,
+                    apply_people applyPeople,
+                    to_char(write_date, 'yyyy-MM-dd') writeDate,
+                    host_id hostId,
+                    host_tel hostTel, 
+                    hits hits,
+                   volunteer_state volunteerState, case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState,
+                   report_cnt reportCnt
+                  from volunteer 
+                  order by volunteerNo desc,(case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end) ,volunteer_no desc) m
+            where rownum<=#{endArticleNum})
+         where runm>=#{startArticleNum}
+      ]]>
+   </select>
+	
+	<select id="getSortAllVolunteer" parameterType="hashmap" resultType="volunteer">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* from
+				    ( select volunteer_no volunteerNo,
+						  volunteer_division volunteerDivision,
+						  volunteer_title volunteerTitle,
+						  volunteer_content volunteerContent,
+						  substr(volunteer_addr, instr(volunteer_addr,')')+1, 2) volunteerAddr,
+						  to_char(volunteer_date, 'yyyy-MM-dd') volunteerDate,
+						  to_char(apply_end_date, 'yyyy-MM-dd') applyEndDate,
+						  age_limit ageLimit,
+						  min_people minPeople,
+						  max_people maxPeople,
+						  apply_people applyPeople,
+						  to_char(write_date, 'yyyy-MM-dd') writeDate,
+						  host_id hostId,
+						  host_tel hostTel, 
+						  hits hits,
+						   case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+						   case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState,
+						 report_cnt reportCnt
+				   		from volunteer where substr(volunteer_addr, instr(volunteer_addr,')')+1, 2) like ${search} order by ${colName} ${sortType}, detailState) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum} 
+			
+		]]>
+	</select>
+	
+	<select id="getSortCountVolunteer" parameterType="string" resultType="int">
+		select count(*) from volunteer where VOLUNTEER_ADDR like ${search}
+	</select>
+	
+
+	
+	<insert id="insertVolunteer" parameterType="volunteer">
+		<![CDATA[
+			insert into volunteer values
+				(	volunteer_no_seq.nextval, #{volunteerDivision}, #{volunteerTitle}, 
+					#{volunteerContent}, #{volunteerAddr},
+					to_date(#{volunteerDate}, 'yyyy-MM-dd'), to_date(#{applyEndDate}, 'yyyy-MM-dd'), #{ageLimit}, #{minPeople}, #{maxPeople}, #{applyPeople}, sysdate, 
+					#{hostId}, #{hostTel}, 0, 1,0	)
+		]]>
+	</insert>
+	
+	<update id="updateVolunteer" parameterType="volunteer">
+      <![CDATA[
+         update volunteer set 
+         volunteer_title=#{volunteerTitle},
+         volunteer_content=#{volunteerContent},
+         volunteer_addr=#{volunteerAddr},
+         volunteer_date=to_date(#{volunteerDate}, 'yyyy-MM-dd'),
+         apply_end_date=to_date(#{applyEndDate}, 'yyyy-MM-dd'),
+         age_limit=#{ageLimit}, 
+         min_people=#{minPeople}, 
+         max_people=#{maxPeople}, 
+         host_tel=#{hostTel} 
+         where volunteer_no=#{volunteerNo}
+      ]]>
+   </update>
+	
+	<delete id="deleteVolunteer" parameterType="int">
+      <![CDATA[
+         delete from volunteer where VOLUNTEER_NO=#{volunteerNo}
+      ]]>
+   </delete>
+	
+	<!-- volunteer_comment테이블  -->
+	
+	 <select id="getVolunteerComment" resultType="volunteerComment" parameterType="int">
+		select VOLUNTEER_COMMENT_NO volunteerCommentNo, 
+				VOLUNTEER_NO volunteerNo, WRITE_ID writeId, 
+				COMMENT_CONTENT commentContent, 
+				to_char(WRITE_DATE,'yyyy-MM-dd') writeDate, REPORT_CNT reportCnt 
+			from VOLUNTEER_COMMENT where volunteer_no=#{volunteerNo} order by volunteerCommentNo
+	</select>
+	 
+	 <select id="getVolunteerApplyList" parameterType="int" resultType="volunteerApply">
+		select volunteer_no volunteerNo, member_id memberId, 
+				apply_tel applyTel, to_char(apply_date, 'yyyy-MM-dd') applyDate, 
+				volunteer_apply_state volunteerApplyState 
+			from volunteer_apply where volunteer_no=#{volunteerNo}
+	</select>
+	
+	<!-- 4.글의 조회수 증가 -->
+	<select id="increasehitsVolunteer" parameterType="int">
+		update volunteer set hits = hits+1 where volunteer_no=#{volunteerNo}
+	</select>
+	 <select id="getAllVolunteerComment" resultType="volunteerComment">
+		<![CDATA[
+			select VOLUNTEER_COMMENT_NO volunteerCommentNo, 
+				VOLUNTEER_NO volunteerNo, WRITE_ID writeId, 
+				COMMENT_CONTENT commentContent, 
+				to_char(WRITE_DATE,'yyyy-MM-dd') writeDate, REPORT_CNT reportCnt 
+			from VOLUNTEER_COMMENT order by write_date
+		]]>
+	</select>
+	<select id="getAllPageVolunteerComment" parameterType="hashmap" resultType="volunteerComment">
+		<![CDATA[
+			select * from(
+				select rownum runm, m.* from
+				    (select VOLUNTEER_COMMENT_NO volunteerCommentNo, 
+					    VOLUNTEER_NO volunteerNo, WRITE_ID writeId, 
+					    COMMENT_CONTENT commentContent, to_char(WRITE_DATE, 'yyyy-MM-dd') writeDate, 
+					    REPORT_CNT reportCnt from VOLUNTEER_COMMENT order by write_date) m
+				where rownum<=#{endArticleNum})
+			where runm>=#{startArticleNum}
+		]]>
+	</select>
+	
+	<insert id="insertVolunteerComment" parameterType="volunteerComment" >
+		<![CDATA[
+			insert into volunteer_comment values( volunteer_comment_no_seq.nextval, 
+			#{volunteerNo}, #{writeId}, #{commentContent} , sysdate, 0)
+		]]>
+	</insert>
+	
+	<update id="updateVolunteerComment" parameterType="volunteerComment">
+		<![CDATA[
+			update volunteer_comment set comment_content=#{commentContent} 
+				where volunteer_comment_no=#{volunteerCommentNo}
+		]]>
+	</update>
+	
+	
+	<delete id="deleteVolunteerComment" parameterType="hashmap">
+		<![CDATA[
+			delete from volunteer_comment where volunteer_no=#{volunteerNo} and volunteer_comment_no=#{volunteerCommentNo}
+		]]>
+	</delete>
+	
+	
+	
+	<!-- volunteer_apply테이블 -->
+	<select id="getAllVolunteerApply" parameterType="int" resultType="volunteerApply">
+		<![CDATA[
+			select volunteer_no volunteerNo, member_id memberId, 
+				apply_tel applyTel, to_char(apply_date, 'yyyy-MM-dd') applyDate, 
+				volunteer_apply_state volunteerApplyState 
+			from volunteer_apply where volunteer_no=#{volunteerNo}
+		]]>
+	</select>
+	
+	<select id="getAllPageVolunteerApply" parameterType="hashmap" resultType="volunteerApply">
+		<![CDATA[
+			select * from(
+			  select rownum runm, m.* from 
+			    (select a.volunteer_no volunteerNo, a.member_id memberId, 
+					a.apply_tel applyTel, to_char(a.apply_date, 'yyyy-MM-dd') applyDate, 
+					a.volunteer_apply_state volunteerApplyState,
+			    	m.member_name memberName
+			    from volunteer_apply a, member m 
+			    where a.member_id = m.member_id
+			    order by a.apply_date ) m
+			  where rownum<=10)
+			where runm>=1
+		]]>
+	</select>
+	
+	<insert id="insertVolunteerApply" parameterType="volunteerApply">
+      <![CDATA[
+         insert into volunteer_apply values( #{volunteerNo}, #{memberId}, #{applyTel}, sysdate, 1 )
+      ]]>
+   </insert>
+   
+   <!-- 봉사 신청수  증가 -->
+   <select id="increaseVolunteerApplyPeople" parameterType="volunteerApply">
+      update volunteer set apply_people = apply_people+1 where volunteer_no = #{volunteerNo}
+   </select>
+	
+	
+	
+	<!-- 봉사 신청수  감소 -->
+	<select id="decreaseVolunteerApplyPeople" parameterType="int">
+		update volunteer set apply_people = apply_people-1 where volunteer_no = #{volunteerNo}
+	</select>
+	
+	
+	<update id="updateVolunteerApply" parameterType="hashmap">
+		<![CDATA[
+			update volunteer_apply set volunteer_apply_state=#{volunteerApplyState} where VOLUNTEER_NO=#{volunteerNo} and member_id=#{memberId}
+		]]>
+	</update>
+	
+	
+	<delete id="deleteVolunteerApply" parameterType="hashmap">
+		<![CDATA[
+			delete from volunteer_apply where VOLUNTEER_NO=#{volunteerNo} and member_id=#{memberId}
+		]]>
+	</delete>
+	
+	
+	<select id="getCountMemberVolunteerListApply" parameterType="adMVolunteerInfo" resultType="int">
+		<![CDATA[
+			select count(*) from
+	            (select 
+	                v.volunteer_division volunteerDivision,
+	                ('['||substr(v.volunteer_addr, 1, 2)||']'||volunteer_title) volunteerTitle,
+	                v.volunteer_content volunteerContent,
+	                v.volunteer_addr volunteerAddr,
+	                to_char(v.volunteer_date, 'yyyyMMdd') volunteerDate,
+	                to_char(v.apply_end_date, 'yyyyMMdd') applyEndDate,
+	                v.age_limit ageLimit,
+	                v.min_people minPeople,
+	                v.max_people maxPeople,
+	                v.apply_people applyPeople,
+	                to_char(v.write_date, 'yyyyMMdd') writeDate,
+	                v.host_id hostId,
+	                v.host_tel hostTel, 
+	                v.hits hits,
+	                v.volunteer_state volunteerState,
+	                a.member_id memberId,
+	                a.apply_tel applyTel,
+	                a.apply_date applyDate,
+	                a.volunteer_apply_state volunteerApplyState
+	            from volunteer_apply a, volunteer v 
+	            where a.volunteer_no=v.volunteer_no and a.member_id=#{memberId})
+	        ${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+
+<!-- ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ창재님의 센터봉사ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ -->	
+<!-- 총 봉사내역수 -->
+<select id="getVolunteerNumOfCenter" resultType="int" parameterType="string">
+   <![CDATA[
+		select count(*) from volunteer where host_id=#{centerId} and volunteer_state!=0
+   ]]>
+</select>
+
+<!-- 봉사내역 -->
+<select id="getVolunteerRecordOfCenter" resultType="volunteer" parameterType="hashmap">
+   <![CDATA[
+		select h2.* from
+		(select rownum rnum, h.* from
+		(select volunteer_no volunteerNo, volunteer_title volunteerTitle, to_char(volunteer_date, 'yyyy-MM-dd') volunteerDate, 
+		to_char(apply_end_date, 'yyyy-MM-dd') applyEndDate, age_limit ageLimit, max_people maxPeople, min_people minPeople, apply_people applyPeople, 
+		
+		case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+		case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState 
+		
+		from volunteer where volunteer_division=1 and host_id=#{centerId} and volunteer_state!=0 order by ${sort}) h
+		where rownum<=#{endArticleNum}) h2
+		where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+<!-- 봉사신청 내역 수 -->
+<select id="getVolunteerApplyNum" resultType="int" parameterType="int">
+   <![CDATA[
+		select count(*) from volunteer_apply where volunteer_no=#{volunteerNo} and volunteer_apply_state!=0
+   ]]>
+</select>
+
+<!-- 봉사신청내역 -->
+<select id="getVolunteerApplyRecord" resultType="volunteerApply" parameterType="hashmap">
+   <![CDATA[
+		select h2.* from
+		(select rownum rnum, h.* from
+		(select volunteer_no volunteerNo, member.member_id memberId, member_name memberName, to_char(birth_date, 'yyyy-MM-dd') birthDate, apply_tel applyTel, 
+		to_char(apply_date, 'yyyy-MM-dd') applyDate, volunteer_apply_state volunteerApplyState 
+		from volunteer_apply, member where volunteer_apply.MEMBER_ID=member.MEMBER_ID and volunteer_no=#{volunteerNo} 
+		and volunteer_apply_state!=0 order by apply_date desc) h
+		where rownum<=#{endArticleNum}) h2
+		where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+<!-- 참가자 거절시 참가자의 봉사상태를 update -->
+<update id="updateApplyState" parameterType="hashmap">
+<![CDATA[
+	update volunteer_apply set volunteer_apply_state=0 where volunteer_no=#{volunteerNo} and member_id=#{memberId}
+]]>
+</update>
+	
+<!-- 혜미혜미혜미혜미혜미혜미 -->
+<!-- 마이페이지 봉사내역 -->
+<select id="getMypageMemberVolunteerAllList" parameterType="hashmap" resultType="hashmap">
+   <![CDATA[
+
+select h2.* from
+(select rownum rnum, h.* from
+(select * from     
+(select v.volunteer_no volunteerNo, substr(v.volunteer_addr, instr(v.volunteer_addr,')')+1, 2) volunteerAddr, v.volunteer_title volunteerTitle, v.host_id hostId, v.apply_people applyPeople, v.max_people maxPeople, to_char(v.write_date,'yyyy-MM-dd') writeDate, va.volunteer_apply_state volunteerApplyState, 
+case when report_cnt>=3 then 3 else volunteer_state end volunteerState, case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState 
+from volunteer v, volunteer_apply va where v.volunteer_no=va.volunteer_no
+and MEMBER_ID=#{memberId} union 
+select distinct v.volunteer_no volunteerNo, substr(v.volunteer_addr, instr(v.volunteer_addr,')')+1, 2) volunteerAddr, v.volunteer_title volunteerTitle, v.host_id hostId, v.apply_people applyPeople, v.max_people maxPeople, to_char(v.write_date,'yyyy-MM-dd') writeDate, va.volunteer_apply_state volunteerApplyState, 
+case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState 
+from volunteer v, volunteer_apply va where HOST_ID=#{memberId} and va.volunteer_apply_state=1) order by volunteerNo desc) h where rownum<=#{endArticleNum}) h2
+where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+<!-- 마이페이지 봉사 내역 글 가져오는데 조건을 달아 ㅇ3ㅇ -->
+<select id="getMypageMemberVolunteerCount" resultType="int" parameterType="String">
+		<![CDATA[
+			select (select DISTINCT count(*) from volunteer v, volunteer_apply va where v.volunteer_no=va.volunteer_no
+and MEMBER_ID=#{memberId})+(select count(distinct v.VOLUNTEER_NO) 
+from volunteer v, volunteer_apply va where HOST_ID=#{memberId} and va.volunteer_apply_state=1) from dual
+		]]>
+</select>
+
+<!-- 봉사내역 모집 필터 -->
+<select id="getMypageMemberVolunteerHostMe" parameterType="hashmap" resultType="hashmap">
+   <![CDATA[
+
+select h2.* from
+(select rownum rnum, h.* from
+(select * from (select distinct v.volunteer_no volunteerNo, substr(v.volunteer_addr, instr(v.volunteer_addr,')')+1, 2) volunteerAddr, v.volunteer_title volunteerTitle, v.host_id hostId, v.apply_people applyPeople, v.max_people maxPeople, to_char(v.write_date,'yyyy-MM-dd') writeDate, va.volunteer_apply_state volunteerApplyState, 
+case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState
+from volunteer v, volunteer_apply va where HOST_ID=#{memberId} and va.volunteer_apply_state=1) order by volunteerNo desc) h where rownum<=#{endArticleNum})h2 where rnum>=#{startArticleNum}
+   ]]>
+</select>
+<!-- 봉사내역 모집 필터 글 개수가져오기..9ㅅ9 -->
+<select id="getMypageMemberVolunteerHostMeCount" resultType="int" parameterType="String">
+		<![CDATA[
+			select count(distinct v.VOLUNTEER_NO) from volunteer v, volunteer_apply va where HOST_ID=#{memberId} and va.volunteer_apply_state=1
+		]]>
+</select>
+
+<!-- 봉사내역 참여 필터 -->
+<select id="getMypageMemberVolunteerJoin" parameterType="hashmap" resultType="hashmap">
+   <![CDATA[
+select h2.* from 
+(select rownum rnum, h.* from 
+(select * from (select distinct v.volunteer_no volunteerNo,substr(v.volunteer_addr, instr(v.volunteer_addr,')')+1, 2) volunteerAddr, v.volunteer_title volunteerTitle, v.host_id hostId, v.apply_people applyPeople, v.max_people maxPeople, to_char(v.write_date,'yyyy-MM-dd') writeDate, va.volunteer_apply_state volunteerApplyState, 
+case when report_cnt>=3 then 3 else volunteer_state end volunteerState, case when apply_end_date>sysdate then 1 when volunteer_date>sysdate then 2 when apply_people>=min_people then 3 else 4 end detailState
+from volunteer v, volunteer_apply va where v.volunteer_no=va.volunteer_no and host_id<>#{memberId} 
+and MEMBER_ID=#{memberId}) order by volunteerNo desc) h where rownum<=#{endArticleNum})h2 
+where rnum>=#{startArticleNum}
+   ]]>
+</select>
+<!--  봉사내역 참여 필터 글 개수가져오기.. -->
+<select id="getMypageMemberVolunteerJoinCount" resultType="int" parameterType="String">
+		<![CDATA[
+			select count(distinct v.volunteer_no) from volunteer v, volunteer_apply va where v.volunteer_no=va.volunteer_no
+and MEMBER_ID=#{memberId} and v.host_id<>#{memberId}
+		]]>
+</select>
+
+<!-- 봉사 참가자 목록 -->
+<select id="getMypageMemberVolunteerList" parameterType="hashmap" resultType="volunteerApply">
+   <![CDATA[
+		select h2.* from
+			(select rownum rnum, h.* from
+				(select v.volunteer_no volunteerNo, v.member_id memberId, 
+					  m.member_name memberName, v.apply_tel applyTel,
+					  to_char(v.apply_date, 'yyyy-MM-dd') applyDate, 
+					  v.volunteer_apply_state volunteerApplyState, a.host_id hostId
+				from volunteer_apply v, member m, volunteer a where v.member_id=m.member_id and v.volunteer_no=a.volunteer_no and  v.VOLUNTEER_NO=#{volunteerNo}) h 
+			where rownum<=#{endArticleNum})h2
+		where rnum>=#{startArticleNum}
+   ]]>
+</select>
+
+	<!-- host_id 가져오기 -->
+	<!-- <select id="getMypageVolunteerHostId" resultType="String" parameterType="int">
+		<![CDATA[
+			select host_id hostId from volunteer where volunteer_no=#{volunteerNo}
+		]]>
+	</select> -->
+<!--  봉사 참가자 목록 글 개수 가져오기...진짜 마지막...부들부들... -->
+<select id="getMypageMemberVolunteerListCount" resultType="int" parameterType="int">
+		<![CDATA[
+			select count(*) from volunteer_apply v, member m where v.member_id=m.member_id and v.VOLUNTEER_NO=#{volunteerNo}
+		]]>
+</select>
+
+<!-- 참가자 거절시 참가자의 봉사상태를 update -->
+<update id="updateMemberVolunteerApplyState" parameterType="volunteerApply">
+<![CDATA[
+	update volunteer_apply set volunteer_apply_state=0 where volunteer_no=#{volunteerNo} and member_id=#{memberId}
+]]>
+</update>
+
+<select id="getVolunteerCount" resultType="int">
+   <![CDATA[
+		select count(*) from volunteer
+   ]]>
+</select>
+
+<select id="getMaxVolunteerNo" resultType="int">
+   <![CDATA[
+		select max(volunteer_no) from volunteer
+   ]]>
+</select>
+
+
+
+
+
+
+
+
+<!-- =============================================================================================== -->
+	<!-- 박주리 모음 -->
+	<select id="getCountMemberVolunteerList" parameterType="adMVolunteerInfo" resultType="int">
+		<![CDATA[
+				select count(*) from
+		                (select volunteer_no volunteerNo,
+		                          volunteer_division volunteerDivision,
+		                          ('['||substr(volunteer_addr, 1, 2)||']'||volunteer_title) volunteerTitle,
+		                          volunteer_content volunteerContent,
+		                          volunteer_addr volunteerAddr,
+		                          to_char(volunteer_date, 'yyyyMMdd') volunteerDate,
+		                          to_char(apply_end_date, 'yyyyMMdd') applyEndDate,
+		                          age_limit ageLimit,
+		                          min_people minPeople,
+		                          max_people maxPeople,
+		                          apply_people applyPeople,
+		                          to_char(write_date, 'yyyyMMdd') writeDate,
+		                          host_id hostId,
+		                          host_tel hostTel, 
+		                          hits hits,
+		                          case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+                                  case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState,
+                                  report_cnt reportCnt
+		                 from volunteer where host_id=#{hostId}) 
+		        ${sqlText} order by ${colName} ${sortType}
+			]]>
+	</select>
+
+	<select id="getMemberVolunteerList" parameterType="adMVolunteerInfo" resultType="volunteer">
+			<![CDATA[
+				select * from
+				    (select rownum rnum, list.* from
+				        (select * from
+				             (select volunteer_no volunteerNo,
+				                         volunteer_division volunteerDivision,
+				                          ('['||substr(volunteer_addr, 1, 2)||']'||volunteer_title) volunteerTitle,
+				                          volunteer_content volunteerContent,
+				                          volunteer_addr volunteerAddr,
+				                          to_char(volunteer_date, 'yyyyMMdd') volunteerDate,
+				                          to_char(apply_end_date, 'yyyyMMdd') applyEndDate,
+				                          age_limit ageLimit,
+				                          min_people minPeople,
+				                          max_people maxPeople,
+				                          apply_people applyPeople,
+				                          to_char(write_date, 'yyyyMMdd') writeDate,
+				                          host_id hostId,
+				                          host_tel hostTel, 
+				                          hits hits,
+                                          case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+                                          case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState,
+                                          report_cnt reportCnt
+				                 from volunteer  where host_id=#{hostId}) 
+				        ${sqlText} order by ${colName} ${sortType})list
+				    where rownum<=#{endArticleNum})
+				where rnum>=#{startArticleNum}
+			]]>
+	</select>
+
+	<select id="getMemberVolunteerListApply" parameterType="adMVolunteerInfo" resultType="volunteer">
+			<![CDATA[
+				select * from
+				    (select rownum rnum, list.* from
+				        (select * from
+				            (select 
+				                v.volunteer_no volunteerNo,
+				                v.volunteer_division volunteerDivision,
+				                ('['||substr(v.volunteer_addr, 1, 2)||']'||volunteer_title) volunteerTitle,
+				                v.volunteer_content volunteerContent,
+				                v.volunteer_addr volunteerAddr,
+				                to_char(v.volunteer_date, 'yyyyMMdd') volunteerDate,
+				                to_char(v.apply_end_date, 'yyyyMMdd') applyEndDate,
+				                v.age_limit ageLimit,
+				                v.min_people minPeople,
+				                v.max_people maxPeople,
+				                v.apply_people applyPeople,
+				                to_char(v.write_date, 'yyyyMMdd') writeDate,
+				                v.host_id hostId,
+				                v.host_tel hostTel, 
+				                v.hits hits,
+				                a.member_id memberId,
+				                a.apply_tel applyTel,
+				                to_char(a.apply_date, 'yyyyMMdd') applyDate,
+				                a.volunteer_apply_state volunteerApplyState,
+				                case when v.report_cnt>=3 then 3 else v.volunteer_state end volunteerState, 
+                                case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState
+				            from volunteer_apply a, volunteer v 
+				            where a.volunteer_no=v.volunteer_no and a.member_id=#{memberId})
+				        ${sqlText} order by ${colName} ${sortType})list
+				    where rownum<=#{endArticleNum})
+				where rnum>=#{startArticleNum}
+			]]>
+	</select>
+
+
+	<update id="updateAllVolunteerApply" parameterType="hashmap">
+			<![CDATA[
+				update volunteer_apply set volunteer_apply_state=#{volunteerApplyState} where VOLUNTEER_NO=#{volunteerNo}
+			]]>
+	</update>
+
+
+
+
+	<delete id="deleteAllVolunteerApply" parameterType="int">
+	      <![CDATA[
+	         delete from volunteer_apply where VOLUNTEER_NO=#{volunteerNo}
+	      ]]>
+	</delete>
+
+	<delete id="deleteAllVolunteerComment" parameterType="int">
+	      <![CDATA[
+	         delete from VOLUNTEER_COMMENT where VOLUNTEER_NO=#{volunteerNo}
+	      ]]>
+	</delete>
+
+	<select id="getVolunteer" parameterType="int" resultType="volunteer">
+			<![CDATA[
+				select volunteer_no volunteerNo,
+					  volunteer_division volunteerDivision,
+					  volunteer_title volunteerTitle,
+					  volunteer_content volunteerContent,
+					  volunteer_addr volunteerAddr,
+					  to_char(volunteer_date, 'yyyy-MM-dd') volunteerDate,
+					  to_char(apply_end_date, 'yyyy-MM-dd') applyEndDate,
+					  age_limit ageLimit,
+					  min_people minPeople,
+					  max_people maxPeople,
+					  apply_people applyPeople,
+					  to_char(write_date, 'yyyy-MM-dd') writeDate,
+					  host_id hostId,
+					  host_tel hostTel, 
+					  hits hits,
+					  case when report_cnt>=3 then 3 else volunteer_state end volunteerState, 
+                      case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState,
+					  report_cnt reportCnt,
+					  substr(volunteer_addr,2,(instr(volunteer_addr,')')-2)) addr1,
+ 					  substr(volunteer_addr, instr(volunteer_addr,')')+1, (instr(volunteer_addr,',')-instr(volunteer_addr,')'))-1 ) addr2,
+ 					  substr(volunteer_addr, (instr(volunteer_addr,',')+1) ) addr3,
+				 	  substr(host_tel,4,8) tel2
+				 from volunteer where volunteer_no=#{volunteerNo}
+			]]>
+	</select>
+
+	<update id="updateVolunteerApplyPeople" parameterType="hashmap">
+		<![CDATA[
+			update volunteer set apply_people=apply_people${num} where VOLUNTEER_NO=#{volunteerNo}
+		]]>
+	</update>
+	
+	<!-- 봉사 댓글( 검색, 필터 추가 ) -->
+	<select id="getCountMemberVolunteerCommentList" parameterType="adMVolunteerCommentInfo" resultType="int">
+		<![CDATA[
+			select count(*) 
+			from  
+				(select v.volunteer_no volunteerNo,
+					('['||substr(v.volunteer_addr, 1, 2)||']'||v.volunteer_title) volunteerTitle, 
+			   		c.VOLUNTEER_COMMENT_NO volunteerCommentNo, 
+			        c.WRITE_ID writeId, c.COMMENT_CONTENT commentContent, 
+			        to_char( c.write_date, 'yyyyMMdd') writeDate, 
+			        c.report_cnt reportCnt,
+			        case when v.report_cnt>=3 then 3 else v.volunteer_state end volunteerState, 
+                    case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState
+			    from
+			    	(select * from volunteer_comment where write_id=#{writeId})c, volunteer v
+			    where c.volunteer_no=v.volunteer_no)
+			${sqlText} order by ${colName} ${sortType}
+		]]>
+	</select>
+	
+	<select id="getMemberVolunteerCommentList" parameterType="adMVolunteerCommentInfo" resultType="volunteerComment">
+		<![CDATA[
+		        select * from 
+			        (select rownum rnum, list.* from
+			            (  select * 
+			                from  
+			                    (select v.volunteer_no volunteerNo, 
+			                    	('['||substr(v.volunteer_addr, 1, 2)||']'||v.volunteer_title) volunteerTitle,
+			                        c.VOLUNTEER_COMMENT_NO volunteerCommentNo, 
+			                        c.WRITE_ID writeId, c.COMMENT_CONTENT commentContent, 
+			                        to_char( c.write_date, 'yyyyMMdd') writeDate, 
+			                        c.report_cnt reportCnt
+			                    from
+			                        (select * from volunteer_comment where write_id=#{writeId})c, volunteer v
+			                    where c.volunteer_no=v.volunteer_no)
+			                    ${sqlText} order by ${colName} ${sortType}) list
+			                where rownum<=#{endArticleNum}) 
+			      where rnum >=#{startArticleNum}
+			]]>
+	</select>
+	
+	<update id="updateVolunteerState" parameterType="hashmap">
+		update volunteer set volunteer_state=#{volunteerState} where volunteer_no=#{volunteerNo}
+	</update>
+	
+	
+	<select id="getTotalVolunteerState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select volunteerState, count(*) count
+	        	from
+	            	(select case when report_cnt>=3 then 3 else volunteer_state end volunteerState
+	                from volunteer where host_id=#{hostId}) 
+	        group by volunteerState
+       	]]>
+	</select>
+	
+	<select id="getTotalDetailState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select detailState, count(*) count
+            from
+                (select 
+                     case when report_cnt>=3 then 3 else volunteer_state end volunteerState,
+                     case 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<sysdate then 2 
+											when (min_people<=apply_people and max_people>=apply_people) and volunteer_date<=sysdate then 3 
+											when (apply_people<min_people and volunteer_date<=sysdate) then 4 
+											else 1 end detailState
+                from volunteer where host_id=#{hostId}) 
+            where volunteerState=1 group by detailState
+       	]]>
+	</select>
+	
+	<select id="getMemberTotalVolunteerApplyState" parameterType="string" resultType="hashmap">
+		<![CDATA[
+			select volunteer_apply_state volunteerApplyState, count(*) count 
+                from volunteer_apply 
+                where member_id=#{memberId}
+                group by volunteer_apply_state
+       	]]>
+	</select>
+	
+	
+	
+	
+	
+	
+	<!-- 수현 -->
+	<!-- 탈퇴를 위한 봉사모집 취소상태로 변경 -->
+	<update id="updateVolunteerStateForResign" parameterType="string">
+		<![CDATA[
+			update volunteer set volunteer_state=2 where host_id=#{hostId}
+		]]>
+	</update>
+	<!-- 탈퇴를 위한 봉사모집 신청자 거절 -->
+	<delete id="deleteVolunteerCancleForResign" parameterType="string">
+	      <![CDATA[
+	         delete from volunteer_apply 
+	         where volunteer_no in (select volunteer_no from volunteer where host_id=#{hostId})
+	      ]]>
+	</delete>
+	<!-- 탈퇴를 위한 봉사참가신청 취소 -->
+	<delete id="deleteVolunteerApplyForResign" parameterType="string">
+	      <![CDATA[
+	      	delete from volunteer_apply where member_id=#{memberId}
+	      ]]>
+	</delete>
+</mapper>
+

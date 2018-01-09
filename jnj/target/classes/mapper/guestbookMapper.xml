@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="guestbookMapper">
+
+	<!--혜미혜미혜미 -->
+	<!-- 방명록 갯수 가져오기 -->
+	<select id="getGuestbookCount" resultType="int" >
+		<![CDATA[
+			 select count(*) from Guestbook
+		]]>
+	</select>
+	
+	<!-- 방명록 리스트 -->
+	<select id="getGuestbookList" resultType="guestbook" parameterType="hashmap">
+		<![CDATA[
+		 	  select * from 
+    			(select rownum rnum, list.* from( 
+       				 select guestbook_no guestbookNo, member_id memberId, content, write_date writeDate FROM guestbook
+       				 order by guestbook.GUESTBOOK_NO desc
+    			)list where rownum<=#{endArticleNum}) 
+			where rnum >=#{startArticleNum}
+		]]>
+	</select>
+	
+	<!-- insert -->
+	<select id="insertGuestbook" parameterType="guestbook">
+		<![CDATA[
+			insert into guestbook VALUES(guestbook_no_seq.nextval, #{memberId},#{content},sysdate)
+		]]>
+	</select>
+
+	<!-- update -->	
+	<update id="updateGuestbook" parameterType="guestbook">
+		<![CDATA[
+			update guestbook set content = #{content} where guestbook_no = #{guestbookNo}
+		]]>
+	</update>
+	<!-- delete -->
+	<delete id="deleteGuestbook" parameterType="int">
+	<![CDATA[
+			delete from guestbook where guestbook_no=#{guestbookNo}
+		]]>
+	</delete>
+	
+	
+</mapper>

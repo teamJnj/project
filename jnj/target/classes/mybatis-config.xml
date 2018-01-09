@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org/DTD config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	
+	<typeAliases>
+		<typeAlias alias="adopt" type="com.icia.jnj.vo.Adopt" />
+		<typeAlias alias="authority" type="com.icia.jnj.vo.Authority" />
+		<typeAlias alias="category" type="com.icia.jnj.vo.Category" />
+		<typeAlias alias="center" type="com.icia.jnj.vo.Center" />
+		<typeAlias alias="centerImg" type="com.icia.jnj.vo.CenterImg" />
+		
+		<typeAlias alias="find" type="com.icia.jnj.vo.Find" />
+		<typeAlias alias="findComment" type="com.icia.jnj.vo.FindComment" />
+		
+		<typeAlias alias="goods" type="com.icia.jnj.vo.Goods" />
+		<typeAlias alias="goodsImg" type="com.icia.jnj.vo.GoodsImg" />
+		<typeAlias alias="goodsOption" type="com.icia.jnj.vo.GoodsOption" />
+		<typeAlias alias="market" type="com.icia.jnj.vo.Market" />
+		<typeAlias alias="marketApply" type="com.icia.jnj.vo.MarketApply" />
+		<typeAlias alias="marketComment" type="com.icia.jnj.vo.MarketComment" />
+		<typeAlias alias="member" type="com.icia.jnj.vo.Member" />
+		<typeAlias alias="memberSponsorRecord" type="com.icia.jnj.vo.MemberSponsorRecord" />
+		<typeAlias alias="message" type="com.icia.jnj.vo.Message" />
+		<typeAlias alias="notice" type="com.icia.jnj.vo.Notice" />
+		<typeAlias alias="orders" type="com.icia.jnj.vo.Orders" />
+		<typeAlias alias="ordersRecord" type="com.icia.jnj.vo.OrdersRecord" />
+		<typeAlias alias="pagination" type="com.icia.jnj.vo.Pagination" />
+		<typeAlias alias="pet" type="com.icia.jnj.vo.Pet" />
+		<typeAlias alias="petImg" type="com.icia.jnj.vo.PetImg" />
+		<typeAlias alias="petSponsor" type="com.icia.jnj.vo.PetSponsor" />
+		<typeAlias alias="qna" type="com.icia.jnj.vo.QnA" />
+		<typeAlias alias="refund" type="com.icia.jnj.vo.Refund" />
+		<typeAlias alias="review" type="com.icia.jnj.vo.Review" />
+		<typeAlias alias="volunteer" type="com.icia.jnj.vo.Volunteer" />
+		<typeAlias alias="volunteerApply" type="com.icia.jnj.vo.VolunteerApply" />
+		<typeAlias alias="volunteerComment" type="com.icia.jnj.vo.VolunteerComment" />
+		<typeAlias alias="sponsorDomain" type="com.icia.jnj.domain.SponsorDomain"/>
+		<typeAlias alias="sponsorPayInfo" type="com.icia.jnj.domain.SponsorPayInfo"/>
+		<typeAlias alias="susers" type="com.icia.jnj.vo.SUsers"/>
+		<typeAlias alias="petCutAndImg" type="com.icia.jnj.domain.PetCutAndImg"/>
+		<typeAlias alias="adMSponsorRecord" type="com.icia.jnj.domain.AdMSponsorRecord"/>
+		<typeAlias alias="adMSponsorInfo" type="com.icia.jnj.domain.AdMSponsorInfo"/>
+		<typeAlias alias="adMAdoptRecord" type="com.icia.jnj.domain.AdMAdoptRecord"/>
+		<typeAlias alias="adMAdoptInfo" type="com.icia.jnj.domain.AdMAdoptInfo"/>
+		<typeAlias alias="adMVolunteerInfo" type="com.icia.jnj.domain.AdMVolunteerInfo"/>
+		<typeAlias alias="adMMarketRecord" type="com.icia.jnj.domain.AdMMarketRecord"/>
+		<typeAlias alias="adMMarketInfo" type="com.icia.jnj.domain.AdMMarketInfo"/>
+		<typeAlias alias="adoptPetCutAndImg" type="com.icia.jnj.domain.AdoptPetCutAndImg"/>
+		<typeAlias alias="cSponsorMonthlyRecord" type="com.icia.jnj.domain.CSponsorMonthlyRecord"/>
+		<typeAlias alias="cSponsorDPRecord" type="com.icia.jnj.domain.CSponsorDPRecord"/>
+		<typeAlias alias="SponsorMypage" type="com.icia.jnj.domain.SponsorMypage"/>
+		
+		<typeAlias alias="findDomain" type="com.icia.jnj.domain.FindDomain"/>
+		<typeAlias alias="foundDomain" type="com.icia.jnj.domain.FoundDomain"/>
+		
+		<typeAlias alias="Guestbook" type="com.icia.jnj.domain.Guestbook"/>
+	
+		<!-- 주리 -->
+		<typeAlias alias="adMVolunteerCommentInfo" type="com.icia.jnj.domain.AdMVolunteerCommentInfo"/>
+		<typeAlias alias="adMMarketCommentInfo" type="com.icia.jnj.domain.AdMMarketCommentInfo"/>
+		<typeAlias alias="adMFindInfo" type="com.icia.jnj.domain.AdMFindInfo"/>
+		<typeAlias alias="adMFindCommentInfo" type="com.icia.jnj.domain.AdMFindCommentInfo"/>
+		<typeAlias alias="adMQnaInfo" type="com.icia.jnj.domain.AdMQnaInfo"/>
+		<typeAlias alias="adCPetInfo" type="com.icia.jnj.domain.AdCPetInfo"/>
+		<typeAlias alias="adCAdoptInfo" type="com.icia.jnj.domain.AdCAdoptInfo"/>
+		<typeAlias alias="adCSponsorInfo" type="com.icia.jnj.domain.AdCSponsorInfo"/>
+		<typeAlias alias="adCSponsorDetailInfo" type="com.icia.jnj.domain.AdCSponsorDetailInfo"/>
+		<typeAlias alias="adNoticeInfo" type="com.icia.jnj.domain.AdNoticeInfo"/>
+		<typeAlias alias="adMarketInfo" type="com.icia.jnj.domain.AdMarketInfo"/>
+		<typeAlias alias="adMarketApplyInfo" type="com.icia.jnj.domain.AdMarketApplyInfo"/>
+		<typeAlias alias="adStoreInfo" type="com.icia.jnj.domain.AdStoreInfo"/>
+		<typeAlias alias="adOrdersInfo" type="com.icia.jnj.domain.AdOrdersInfo"/>
+		<typeAlias alias="adSalesInfo" type="com.icia.jnj.domain.AdSalesInfo"/>
+		<typeAlias alias="adSalesStoreInfo" type="com.icia.jnj.domain.AdSalesStoreInfo"/>
+	
+	
+	</typeAliases>
+	
+	
+</configuration>
